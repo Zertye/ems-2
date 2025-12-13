@@ -1,0 +1,14 @@
+# Configuration Nixpacks pour un déploiement robuste
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+# Installe les dépendances du backend
+cmds = ["npm install"]
+
+[phases.build]
+# Installe et construit le frontend
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm start"
