@@ -4,49 +4,27 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Palette médicale professionnelle
-        med: {
-          50: '#e6fbf4',
-          100: '#b3f3de',
-          200: '#80ebc8',
-          300: '#4de3b2',
-          400: '#1adb9c',
-          500: '#00d68f',
-          600: '#00a86b',
-          700: '#007a4d',
-          800: '#004c30',
-          900: '#001e13',
+        primary: {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
         },
-        // Fond sombre professionnel
-        dark: {
-          50: '#e8edf2',
-          100: '#c5d1dc',
-          200: '#8fa3b8',
-          300: '#5a7085',
-          400: '#3d5060',
-          500: '#2a3a4a',
-          600: '#1e2a36',
-          700: '#1a232d',
-          800: '#131a21',
-          900: '#0f1419',
-          950: '#0a0f14',
-        },
-        // Accents
-        accent: {
-          cyan: '#00b8d9',
-          warning: '#ffaa00',
-          danger: '#ff4757',
-          info: '#3b82f6',
+        sidebar: {
+          DEFAULT: '#0f172a',
+          hover: '#1e293b',
         }
       },
       fontFamily: {
-        sans: ['Source Sans 3', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'monospace'],
       },
-      boxShadow: {
-        'glow': '0 0 20px rgba(0, 214, 143, 0.15)',
-        'glow-lg': '0 0 40px rgba(0, 214, 143, 0.2)',
-      }
     }
   },
   plugins: []
