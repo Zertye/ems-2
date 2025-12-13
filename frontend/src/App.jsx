@@ -3,8 +3,8 @@ import { createContext, useContext, useState, useEffect, useRef } from "react"
 import { 
   Activity, Users, ClipboardList, Stethoscope, ShieldAlert, 
   LogOut, LayoutDashboard, FileText, Menu, X, 
-  Thermometer, Heart, Wind, Gauge, AlertTriangle, CheckCircle, HelpCircle,
-  Search, Plus, Filter, Calendar, Clock, Edit2, Trash2, Check, Phone, Save, Settings, User, FilePlus, DollarSign, ArrowLeft, Send, Lock, UserPlus, Eye, Camera, Upload, ChevronDown, Zap, Shield
+  AlertTriangle, CheckCircle, HelpCircle,
+  Search, Plus, Calendar, Clock, Edit2, Trash2, Check, Phone, User, FilePlus, ArrowLeft, Send, UserPlus, Eye, Camera, ChevronRight, Building2, Heart
 } from "lucide-react"
 
 // --- Auth Context ---
@@ -64,32 +64,37 @@ function AuthProvider({ children }) {
 }
 
 // --- GLOBAL COMPONENTS ---
-const InputField = ({ onKeyDown, className, ...props }) => (
-  <input 
-    className={`input-field ${className || ''}`}
-    onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); if (onKeyDown) onKeyDown(e); }}
-    {...props} 
-  />
+const InputField = ({ label, onKeyDown, className, ...props }) => (
+  <div className={className}>
+    {label && <label className="label">{label}</label>}
+    <input 
+      className="input-field"
+      onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); if (onKeyDown) onKeyDown(e); }}
+      {...props} 
+    />
+  </div>
 )
 
-const SelectField = ({ className, ...props }) => (
-  <select className={`input-field appearance-none cursor-pointer ${className || ''}`} {...props} />
+const SelectField = ({ label, className, children, ...props }) => (
+  <div className={className}>
+    {label && <label className="label">{label}</label>}
+    <select className="input-field appearance-none cursor-pointer" {...props}>{children}</select>
+  </div>
 )
 
-const DiagnosisInput = ({ onKeyDown, className, ...props }) => (
-  <input 
-    className={`input-field font-mono text-lg h-14 pt-6 ${className || ''}`}
-    onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); if (onKeyDown) onKeyDown(e); }}
-    {...props}
-  />
+const TextArea = ({ label, className, ...props }) => (
+  <div className={className}>
+    {label && <label className="label">{label}</label>}
+    <textarea className="input-field min-h-[100px] resize-none" {...props} />
+  </div>
 )
 
-// --- Layout & UI Components ---
+// --- Layout ---
 function SidebarItem({ icon: Icon, label, to, active }) {
   return (
-    <Link to={to} className={`nav-item ${active ? "nav-item-active" : ""}`}>
-      <Icon size={18} strokeWidth={1.5} />
-      <span>{label}</span>
+    <Link to={to} className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}>
+      <Icon size={18} strokeWidth={1.75} />
+      <span className="font-medium">{label}</span>
     </Link>
   )
 }
@@ -128,42 +133,39 @@ function Layout({ children }) {
   }
 
   const navs = [
-    { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+    { icon: LayoutDashboard, label: "Tableau de bord", to: "/dashboard" },
     { icon: ClipboardList, label: "Rendez-vous", to: "/appointments" },
     { icon: Users, label: "Patients", to: "/patients" },
     { icon: Stethoscope, label: "Diagnostic", to: "/diagnosis" },
     { icon: FileText, label: "Rapports", to: "/reports" },
     { icon: Activity, label: "Effectifs", to: "/roster" },
   ]
-  if (isAdmin || user?.grade_permissions?.manage_users) navs.push({ icon: ShieldAlert, label: "Admin", to: "/admin" })
+  if (isAdmin || user?.grade_permissions?.manage_users) navs.push({ icon: ShieldAlert, label: "Administration", to: "/admin" })
 
   return (
-    <div className="min-h-screen bg-dark-950 text-dark-50 font-sans flex overflow-hidden">
-      {/* Sidebar Desktop */}
-      <aside className="hidden lg:flex flex-col w-64 bg-dark-900 border-r border-dark-600 h-screen sticky top-0 z-30">
-        {/* Header */}
-        <div className="px-5 py-5 border-b border-dark-600">
+    <div className="min-h-screen bg-slate-100 flex">
+      {/* Sidebar */}
+      <aside className="hidden lg:flex flex-col w-60 bg-sidebar fixed h-full z-30">
+        <div className="p-4 border-b border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-med-500 rounded-lg flex items-center justify-center">
-              <Shield size={20} className="text-dark-950" strokeWidth={2.5} />
+            <div className="w-9 h-9 bg-primary-600 rounded-lg flex items-center justify-center">
+              <Heart size={20} className="text-white" fill="white" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-white tracking-tight">EMS TERMINAL</h1>
-              <p className="text-xs text-dark-300 font-mono">RMB v2.1</p>
+              <h1 className="text-white font-semibold text-sm">MRSA</h1>
+              <p className="text-slate-400 text-xs">Gestion Médicale</p>
             </div>
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          <div className="data-label px-3 py-2">Navigation</div>
+          <p className="section-title mt-2">Menu principal</p>
           {navs.map(n => <SidebarItem key={n.to} {...n} active={location.pathname === n.to} />)}
         </nav>
 
-        {/* User section */}
-        <div className="p-3 border-t border-dark-600">
-          <button onClick={openProfile} className="w-full flex items-center gap-3 p-2.5 rounded-md hover:bg-dark-800 transition-colors text-left">
-            <div className="w-9 h-9 rounded-lg bg-dark-700 flex items-center justify-center text-white font-semibold text-sm overflow-hidden ring-2 ring-dark-600">
+        <div className="p-3 border-t border-slate-700">
+          <button onClick={openProfile} className="w-full flex items-center gap-3 p-2 rounded hover:bg-sidebar-hover transition-colors text-left">
+            <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
                 {user?.profile_picture ? (
                     <img src={user.profile_picture} className="w-full h-full object-cover" />
                 ) : (
@@ -171,67 +173,63 @@ function Layout({ children }) {
                 )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user?.first_name} {user?.last_name}</p>
-              <p className="text-xs text-dark-300 truncate font-mono">@{user?.username}</p>
+              <p className="text-sm text-white truncate">{user?.first_name} {user?.last_name}</p>
+              <p className="text-xs text-slate-400 truncate">{user?.grade_name}</p>
             </div>
-            <Settings size={14} className="text-dark-400" />
           </button>
-          <button onClick={logout} className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 text-accent-danger hover:bg-accent-danger/10 rounded-md transition-colors text-sm font-medium">
+          <button onClick={logout} className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 text-red-400 hover:bg-red-500/10 rounded text-sm font-medium transition-colors">
             <LogOut size={16} /> Déconnexion
           </button>
         </div>
       </aside>
 
       {/* Mobile Header */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="lg:hidden bg-dark-900 border-b border-dark-600 px-4 py-3 flex justify-between items-center z-20">
+      <div className="flex-1 flex flex-col lg:ml-60">
+        <header className="lg:hidden bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center sticky top-0 z-20">
           <div className="flex items-center gap-2">
-             <div className="w-8 h-8 bg-med-500 rounded-lg flex items-center justify-center">
-               <Shield size={18} className="text-dark-950" strokeWidth={2.5} />
-             </div>
-             <span className="font-bold text-white text-sm">EMS RMB</span>
+             <Heart size={24} className="text-primary-600" fill="currentColor" />
+             <span className="font-semibold text-slate-800">MRSA</span>
           </div>
-          <button onClick={() => setMobileMenu(!mobileMenu)} className="p-2 hover:bg-dark-800 rounded-md"><Menu size={20} /></button>
+          <button onClick={() => setMobileMenu(!mobileMenu)} className="p-2 hover:bg-slate-100 rounded"><Menu size={20} /></button>
         </header>
         
         {mobileMenu && (
-          <div className="lg:hidden fixed inset-0 bg-dark-950 z-50 p-4">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-bold text-white">Menu</h2>
-              <button onClick={() => setMobileMenu(false)} className="p-2 hover:bg-dark-800 rounded-md"><X size={20} /></button>
+          <div className="lg:hidden fixed inset-0 bg-white z-50 p-4">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b">
+              <h2 className="text-lg font-semibold">Menu</h2>
+              <button onClick={() => setMobileMenu(false)} className="p-2 hover:bg-slate-100 rounded"><X size={20} /></button>
             </div>
             <nav className="space-y-1">
               {navs.map(n => (
-                <Link key={n.to} to={n.to} onClick={() => setMobileMenu(false)} className="flex items-center gap-3 p-3 rounded-md text-dark-200 hover:bg-dark-800 hover:text-white">
-                  <n.icon size={18} strokeWidth={1.5} /> {n.label}
+                <Link key={n.to} to={n.to} onClick={() => setMobileMenu(false)} className="flex items-center gap-3 p-3 rounded text-slate-700 hover:bg-slate-100">
+                  <n.icon size={18} /> {n.label}
                 </Link>
               ))}
-              <div className="border-t border-dark-600 my-4" />
-              <button onClick={logout} className="w-full flex items-center gap-3 p-3 text-accent-danger font-medium">
+              <div className="border-t my-4" />
+              <button onClick={logout} className="w-full flex items-center gap-3 p-3 text-red-600 font-medium">
                 <LogOut size={18} /> Déconnexion
               </button>
             </nav>
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-dark-950">
-          <div className="max-w-7xl mx-auto animate-fade-in">{children}</div>
+        <main className="flex-1 p-4 lg:p-6">
+          <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
 
       {/* Profile Modal */}
       {showProfileModal && (
-        <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
-          <div className="bg-dark-800 border border-dark-600 w-full max-w-md rounded-lg overflow-hidden animate-fade-in">
-            <div className="flex justify-between items-center p-4 border-b border-dark-600">
-              <h2 className="text-lg font-bold text-white">Mon Profil</h2>
-              <button onClick={() => setShowProfileModal(false)} className="p-1 hover:bg-dark-700 rounded"><X size={18} className="text-dark-300" /></button>
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md shadow-xl">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="font-semibold text-slate-800">Mon Profil</h2>
+              <button onClick={() => setShowProfileModal(false)} className="p-1 hover:bg-slate-100 rounded"><X size={18} /></button>
             </div>
             <form onSubmit={saveProfile} className="p-4 space-y-4">
-              
               <div className="flex justify-center">
                   <div 
-                      className="w-20 h-20 rounded-lg bg-dark-700 border border-dark-500 flex items-center justify-center relative overflow-hidden group cursor-pointer"
+                      className="w-20 h-20 rounded-full bg-slate-200 border-2 border-slate-300 flex items-center justify-center relative overflow-hidden group cursor-pointer"
                       onClick={() => fileInputRef.current.click()}
                   >
                       {profileForm.profile_picture ? (
@@ -239,38 +237,22 @@ function Layout({ children }) {
                       ) : user?.profile_picture ? (
                           <img src={user.profile_picture} className="w-full h-full object-cover" />
                       ) : (
-                          <User size={32} className="text-dark-400" />
+                          <User size={32} className="text-slate-400" />
                       )}
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <Camera className="text-white" size={20} />
                       </div>
                   </div>
-                  <input 
-                      type="file" 
-                      ref={fileInputRef} 
-                      className="hidden" 
-                      accept="image/*"
-                      onChange={e => setProfileForm({...profileForm, profile_picture: e.target.files[0]})}
-                  />
+                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={e => setProfileForm({...profileForm, profile_picture: e.target.files[0]})} />
               </div>
-
               <div className="grid grid-cols-2 gap-3">
-                 <div>
-                    <label className="data-label mb-1 block">Prénom (RP)</label>
-                    <InputField value={profileForm.first_name} onChange={e => setProfileForm({...profileForm, first_name: e.target.value})} required />
-                 </div>
-                 <div>
-                    <label className="data-label mb-1 block">Nom (RP)</label>
-                    <InputField value={profileForm.last_name} onChange={e => setProfileForm({...profileForm, last_name: e.target.value})} required />
-                 </div>
+                 <InputField label="Prénom" value={profileForm.first_name} onChange={e => setProfileForm({...profileForm, first_name: e.target.value})} required />
+                 <InputField label="Nom" value={profileForm.last_name} onChange={e => setProfileForm({...profileForm, last_name: e.target.value})} required />
               </div>
-              <div>
-                 <label className="data-label mb-1 block">Téléphone</label>
-                 <InputField value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: e.target.value})} />
-              </div>
+              <InputField label="Téléphone" value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: e.target.value})} />
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowProfileModal(false)} className="btn-secondary flex-1">Annuler</button>
-                <button type="submit" className="btn-primary flex-1">Sauvegarder</button>
+                <button type="submit" className="btn-primary flex-1">Enregistrer</button>
               </div>
             </form>
           </div>
@@ -280,25 +262,21 @@ function Layout({ children }) {
   )
 }
 
-function StatCard({ label, value, colorClass, icon: Icon }) {
-  const colorMap = {
-    'text-blue-400': 'text-accent-info bg-accent-info/10',
-    'text-green-400': 'text-med-500 bg-med-500/10',
-    'text-yellow-400': 'text-accent-warning bg-accent-warning/10',
-    'text-ems-400': 'text-accent-cyan bg-accent-cyan/10',
+function StatCard({ label, value, icon: Icon, color = "blue" }) {
+  const colors = {
+    blue: "text-primary-600 bg-primary-50",
+    green: "text-emerald-600 bg-emerald-50",
+    yellow: "text-amber-600 bg-amber-50",
+    red: "text-red-600 bg-red-50",
   }
-  const mappedColor = colorMap[colorClass] || 'text-med-500 bg-med-500/10'
-  const textColor = mappedColor.split(' ')[0]
-  const bgColor = mappedColor.split(' ')[1]
-
   return (
-    <div className="card p-5 hover:border-dark-500 transition-colors">
-      <div className="flex items-start justify-between">
+    <div className="card p-5">
+      <div className="flex items-center justify-between">
         <div>
-          <p className="data-label mb-2">{label}</p>
-          <p className={`text-3xl font-bold font-mono ${textColor}`}>{value}</p>
+          <p className="text-sm text-slate-500 mb-1">{label}</p>
+          <p className="stat-value text-slate-800">{value}</p>
         </div>
-        {Icon && <div className={`p-2.5 rounded-lg ${bgColor}`}><Icon size={20} className={textColor} strokeWidth={1.5} /></div>}
+        {Icon && <div className={`p-3 rounded-lg ${colors[color]}`}><Icon size={22} strokeWidth={1.75} /></div>}
       </div>
     </div>
   )
@@ -308,8 +286,8 @@ function PageHeader({ title, subtitle, action }) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">{title}</h1>
-        {subtitle && <p className="text-dark-300 text-sm mt-0.5">{subtitle}</p>}
+        <h1 className="text-xl font-semibold text-slate-800">{title}</h1>
+        {subtitle && <p className="text-slate-500 text-sm mt-0.5">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -338,68 +316,60 @@ function PublicBooking() {
   }
 
   if(submitted) return (
-    <div className="min-h-screen bg-dark-950 flex items-center justify-center p-4">
-      <div className="card p-8 max-w-md w-full text-center border-med-600">
-        <div className="w-16 h-16 bg-med-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle size={32} className="text-med-500" />
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg p-8 max-w-md w-full text-center shadow-sm border">
+        <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircle size={32} className="text-emerald-600" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Demande Envoyée</h2>
-        <p className="text-dark-200 mb-6">Votre demande a été transmise. Un médecin prendra contact avec vous.</p>
+        <h2 className="text-xl font-semibold text-slate-800 mb-2">Demande envoyée</h2>
+        <p className="text-slate-500 mb-6">Votre demande a été transmise. Un membre de l'équipe médicale vous contactera.</p>
         <button onClick={() => navigate('/')} className="btn-secondary w-full">Retour à l'accueil</button>
       </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-dark-950 p-4 lg:p-8 flex flex-col items-center justify-center">
-      <div className="w-full max-w-xl">
-        <button onClick={() => navigate('/')} className="mb-4 flex items-center gap-2 text-dark-300 hover:text-white transition-colors text-sm font-medium">
+    <div className="min-h-screen bg-slate-100 p-4 lg:p-8 flex flex-col items-center justify-center">
+      <div className="w-full max-w-lg">
+        <button onClick={() => navigate('/')} className="mb-4 flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm">
           <ArrowLeft size={16} /> Retour
         </button>
         
         <div className="card p-6">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-dark-600">
-            <div className="w-10 h-10 bg-med-500 rounded-lg flex items-center justify-center">
-              <Shield size={22} className="text-dark-950" strokeWidth={2.5} />
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b">
+            <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
+              <Heart size={22} className="text-white" fill="white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Prendre Rendez-vous</h1>
-              <p className="text-dark-300 text-sm">Services Médicaux - RMB</p>
+              <h1 className="text-lg font-semibold text-slate-800">Demande de rendez-vous</h1>
+              <p className="text-slate-500 text-sm">Services Médicaux MRSA</p>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <p className="data-label mb-3">Vos Coordonnées</p>
-              <div className="grid md:grid-cols-2 gap-3">
-                <InputField placeholder="Nom & Prénom (RP)" value={form.patient_name} onChange={e => setForm({...form, patient_name: e.target.value})} required />
-                <InputField placeholder="Numéro de Téléphone" value={form.patient_phone} onChange={e => setForm({...form, patient_phone: e.target.value})} required />
-              </div>
-              <InputField className="mt-3" placeholder="Discord (optionnel)" value={form.patient_discord} onChange={e => setForm({...form, patient_discord: e.target.value})} />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-3">
+              <InputField label="Nom & Prénom" placeholder="Jean Dupont" value={form.patient_name} onChange={e => setForm({...form, patient_name: e.target.value})} required />
+              <InputField label="Téléphone" placeholder="06 12 34 56 78" value={form.patient_phone} onChange={e => setForm({...form, patient_phone: e.target.value})} required />
             </div>
-
-            <div>
-              <p className="data-label mb-3">Détails du Rendez-vous</p>
-              <SelectField value={form.appointment_type} onChange={e => setForm({...form, appointment_type: e.target.value})}>
-                <option value="Consultation">Consultation Générale</option>
-                <option value="Check-up">Check-up Complet</option>
-                <option value="Certificat">Certificat Médical / PPA</option>
-                <option value="Suivi">Suivi Psychologique</option>
-                <option value="Urgence">Urgence Relative</option>
-              </SelectField>
-              <div className="grid md:grid-cols-2 gap-3 mt-3">
-                <InputField type="date" value={form.preferred_date} onChange={e => setForm({...form, preferred_date: e.target.value})} required />
-                <InputField type="time" value={form.preferred_time} onChange={e => setForm({...form, preferred_time: e.target.value})} required />
-              </div>
-              <textarea 
-                className="input-field mt-3 min-h-[100px] resize-none"
-                placeholder="Motif du rendez-vous..."
-                value={form.description} onChange={e => setForm({...form, description: e.target.value})}
-              />
+            <InputField label="Discord (optionnel)" placeholder="username#0000" value={form.patient_discord} onChange={e => setForm({...form, patient_discord: e.target.value})} />
+            
+            <SelectField label="Type de rendez-vous" value={form.appointment_type} onChange={e => setForm({...form, appointment_type: e.target.value})}>
+              <option value="Consultation">Consultation Générale</option>
+              <option value="Check-up">Check-up Complet</option>
+              <option value="Certificat">Certificat Médical / PPA</option>
+              <option value="Suivi">Suivi Psychologique</option>
+              <option value="Urgence">Urgence Relative</option>
+            </SelectField>
+            
+            <div className="grid md:grid-cols-2 gap-3">
+              <InputField label="Date souhaitée" type="date" value={form.preferred_date} onChange={e => setForm({...form, preferred_date: e.target.value})} required />
+              <InputField label="Heure souhaitée" type="time" value={form.preferred_time} onChange={e => setForm({...form, preferred_time: e.target.value})} required />
             </div>
+            
+            <TextArea label="Motif" placeholder="Décrivez brièvement le motif de votre demande..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
 
-            <button type="submit" className="btn-primary w-full py-3 flex items-center justify-center gap-2">
-              <Send size={18} /> Confirmer la Demande
+            <button type="submit" className="btn-primary w-full py-2.5">
+              <Send size={16} className="mr-2" /> Envoyer la demande
             </button>
           </form>
         </div>
@@ -467,32 +437,32 @@ function Patients() {
     <Layout>
       <PageHeader 
         title="Dossiers Patients" 
-        subtitle="Base de données civile"
+        subtitle="Gestion des dossiers médicaux"
         action={hasPerm('create_patients') && (
-          <button onClick={() => { setEditingId(null); setForm(initialForm); setShowModal(true) }} className="btn-primary flex items-center gap-2">
-            <Plus size={16} /> Nouveau Patient
+          <button onClick={() => { setEditingId(null); setForm(initialForm); setShowModal(true) }} className="btn-primary">
+            <Plus size={16} className="mr-2" /> Nouveau patient
           </button>
         )}
       />
 
-      <div className="card overflow-hidden">
-        <div className="p-4 border-b border-dark-600">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
-            <InputField 
-              className="pl-9"
-              placeholder="Rechercher par Nom, Prénom ou ID..."
+      <div className="card">
+        <div className="p-4 border-b">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <input 
+              className="input-field pl-9"
+              placeholder="Rechercher un patient..."
               value={search} onChange={e => setSearch(e.target.value)}
             />
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full">
             <thead>
-              <tr className="bg-dark-900">
-                <th className="table-header">Identité</th>
-                <th className="table-header">ID Identité</th>
+              <tr>
+                <th className="table-header">Patient</th>
+                <th className="table-header">N° Identité</th>
                 <th className="table-header">Contact</th>
                 <th className="table-header text-right">Actions</th>
               </tr>
@@ -500,33 +470,33 @@ function Patients() {
             <tbody>
               {patients.map(p => (
                 <tr key={p.id} className="table-row">
-                  <td className="p-4">
+                  <td className="table-cell">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-dark-700 overflow-hidden flex-shrink-0 ring-1 ring-dark-600">
-                          {p.photo ? <img src={p.photo} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-dark-400"><User size={18}/></div>}
+                      <div className="w-9 h-9 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
+                          {p.photo ? <img src={p.photo} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400"><User size={16}/></div>}
                       </div>
                       <div>
-                          <div className="font-semibold text-white">{p.last_name} {p.first_name}</div>
-                          <div className="text-xs text-dark-300">Né(e): {p.date_of_birth ? new Date(p.date_of_birth).toLocaleDateString() : "—"}</div>
+                          <div className="font-medium text-slate-800">{p.last_name} {p.first_name}</div>
+                          <div className="text-xs text-slate-500">{p.date_of_birth ? new Date(p.date_of_birth).toLocaleDateString('fr-FR') : "Date inconnue"}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="p-4 font-mono text-med-500 text-sm">{p.insurance_number || "—"}</td>
-                  <td className="p-4">
-                    <div className="text-sm text-dark-200 flex items-center gap-1"><Phone size={12} className="text-dark-400" /> {p.phone || "N/A"}</div>
-                    <div className="text-xs text-dark-400">{p.gender === 'M' ? 'Homme' : p.gender === 'F' ? 'Femme' : 'Autre'}</div>
+                  <td className="table-cell font-mono text-sm text-primary-600">{p.insurance_number || "—"}</td>
+                  <td className="table-cell">
+                    <div className="text-sm text-slate-600">{p.phone || "N/A"}</div>
+                    <div className="text-xs text-slate-400">{p.gender === 'M' ? 'Homme' : p.gender === 'F' ? 'Femme' : 'Autre'}</div>
                   </td>
-                  <td className="p-4 text-right">
+                  <td className="table-cell text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => navigate(`/reports?patient_id=${p.id}`)} title="Voir Rapports" className="p-2 text-dark-300 hover:text-white hover:bg-dark-700 rounded transition-colors"><Eye size={16} /></button>
-                      {hasPerm('create_patients') && <button onClick={() => handleEdit(p)} className="p-2 text-dark-300 hover:text-white hover:bg-dark-700 rounded transition-colors"><Edit2 size={16} /></button>}
-                      {hasPerm('delete_patients') && <button onClick={() => handleDelete(p.id)} className="p-2 text-dark-300 hover:text-accent-danger hover:bg-accent-danger/10 rounded transition-colors"><Trash2 size={16} /></button>}
+                      <button onClick={() => navigate(`/reports?patient_id=${p.id}`)} title="Voir Rapports" className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded"><Eye size={16} /></button>
+                      {hasPerm('create_patients') && <button onClick={() => handleEdit(p)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded"><Edit2 size={16} /></button>}
+                      {hasPerm('delete_patients') && <button onClick={() => handleDelete(p.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={16} /></button>}
                     </div>
                   </td>
                 </tr>
               ))}
               {patients.length === 0 && (
-                <tr><td colSpan="4" className="p-8 text-center text-dark-400">Aucun patient trouvé.</td></tr>
+                <tr><td colSpan="4" className="p-8 text-center text-slate-400">Aucun patient trouvé</td></tr>
               )}
             </tbody>
           </table>
@@ -534,17 +504,16 @@ function Patients() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
-          <div className="bg-dark-800 border border-dark-600 w-full max-w-lg rounded-lg overflow-hidden animate-fade-in">
-            <div className="p-4 border-b border-dark-600 flex justify-between items-center">
-              <h2 className="text-lg font-bold text-white">{editingId ? "Modifier Patient" : "Nouveau Patient"}</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-dark-700 rounded"><X className="text-dark-300" size={18} /></button>
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-lg shadow-xl">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="font-semibold text-slate-800">{editingId ? "Modifier le patient" : "Nouveau patient"}</h2>
+              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-slate-100 rounded"><X size={18} /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
-              
                <div className="flex justify-center">
                   <div 
-                      className="w-20 h-20 rounded-lg bg-dark-700 border border-dark-500 flex items-center justify-center relative overflow-hidden group cursor-pointer"
+                      className="w-20 h-20 rounded-full bg-slate-200 border-2 border-slate-300 flex items-center justify-center relative overflow-hidden group cursor-pointer"
                       onClick={() => fileInputRef.current.click()}
                   >
                       {form.photo instanceof File ? (
@@ -552,9 +521,9 @@ function Patients() {
                       ) : form.photo ? (
                           <img src={form.photo} className="w-full h-full object-cover" />
                       ) : (
-                          <User size={32} className="text-dark-400" />
+                          <User size={32} className="text-slate-400" />
                       )}
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <Camera className="text-white" size={20} />
                       </div>
                   </div>
@@ -562,29 +531,24 @@ function Patients() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <InputField placeholder="Prénom" value={form.first_name} onChange={e => setForm({...form, first_name: e.target.value})} required />
-                <InputField placeholder="Nom" value={form.last_name} onChange={e => setForm({...form, last_name: e.target.value})} required />
+                <InputField label="Prénom" value={form.first_name} onChange={e => setForm({...form, first_name: e.target.value})} required />
+                <InputField label="Nom" value={form.last_name} onChange={e => setForm({...form, last_name: e.target.value})} required />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <InputField type="date" value={form.date_of_birth?.split('T')[0]} onChange={e => setForm({...form, date_of_birth: e.target.value})} />
-                <SelectField value={form.gender} onChange={e => setForm({...form, gender: e.target.value})}>
+                <InputField label="Date de naissance" type="date" value={form.date_of_birth?.split('T')[0]} onChange={e => setForm({...form, date_of_birth: e.target.value})} />
+                <SelectField label="Genre" value={form.gender} onChange={e => setForm({...form, gender: e.target.value})}>
                   <option value="M">Homme</option>
                   <option value="F">Femme</option>
                   <option value="X">Autre</option>
                 </SelectField>
               </div>
-              <InputField placeholder="ID Identité (Carte d'identité)" value={form.insurance_number} onChange={e => setForm({...form, insurance_number: e.target.value})} required />
-              <InputField placeholder="Téléphone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
-              <textarea 
-                className="input-field min-h-[100px] resize-none" 
-                placeholder="Notes médicales / Antécédents..." 
-                value={form.chronic_conditions} 
-                onChange={e => setForm({...form, chronic_conditions: e.target.value})} 
-              />
+              <InputField label="N° Identité" value={form.insurance_number} onChange={e => setForm({...form, insurance_number: e.target.value})} required />
+              <InputField label="Téléphone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+              <TextArea label="Antécédents / Notes" value={form.chronic_conditions} onChange={e => setForm({...form, chronic_conditions: e.target.value})} />
               
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1">Annuler</button>
-                <button type="submit" className="btn-primary flex-1">Sauvegarder</button>
+                <button type="submit" className="btn-primary flex-1">Enregistrer</button>
               </div>
             </form>
           </div>
@@ -615,13 +579,12 @@ function Appointments() {
         opts.body = JSON.stringify({ completion_notes: note });
     }
     if (action === 'delete') url = `/api/appointments/${id}`;
-
     await fetch(url, opts)
     load()
   }
   
   const handleDelete = (id) => {
-      if(window.confirm("Supprimer DÉFINITIVEMENT ce rendez-vous ?")) {
+      if(window.confirm("Supprimer définitivement ce rendez-vous ?")) {
           handleStatus(id, 'delete');
       }
   }
@@ -632,18 +595,25 @@ function Appointments() {
     return true
   })
 
+  const statusBadge = (status) => {
+    if (status === 'pending') return <span className="badge badge-yellow">En attente</span>
+    if (status === 'assigned') return <span className="badge badge-blue">Assigné</span>
+    if (status === 'completed') return <span className="badge badge-green">Terminé</span>
+    return <span className="badge badge-red">Annulé</span>
+  }
+
   return (
     <Layout>
-      <PageHeader title="Rendez-vous" subtitle="Gestion du planning médical" />
+      <PageHeader title="Rendez-vous" subtitle="Planning des consultations" />
 
-      <div className="flex gap-1 mb-5 bg-dark-900 p-1 rounded-lg w-fit border border-dark-600">
+      <div className="flex gap-1 mb-4 bg-white p-1 rounded border w-fit">
         {[
           { id: "all", label: "Tous" },
           { id: "pending", label: "En attente" },
           { id: "my", label: "Mes RDV" }
         ].map(f => (
           <button key={f.id} onClick={() => setFilter(f.id)} 
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${filter === f.id ? "bg-dark-700 text-white" : "text-dark-300 hover:text-white"}`}>
+            className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${filter === f.id ? "bg-primary-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>
             {f.label}
           </button>
         ))}
@@ -651,53 +621,46 @@ function Appointments() {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map(a => (
-          <div key={a.id} className="card p-4 hover:border-dark-500 transition-colors relative group">
-            
+          <div key={a.id} className="card p-4 relative group">
             {isAdmin && (
-                <button onClick={() => handleDelete(a.id)} className="absolute top-3 right-3 p-1.5 text-dark-500 hover:text-accent-danger hover:bg-accent-danger/10 rounded transition-colors opacity-0 group-hover:opacity-100">
+                <button onClick={() => handleDelete(a.id)} className="absolute top-3 right-3 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                     <Trash2 size={14} />
                 </button>
             )}
-
             <div className="mb-3">
-                 <span className={`badge ${
-                   a.status === 'pending' ? 'badge-warning' : 
-                   a.status === 'assigned' ? 'badge-info' : 
-                   'badge-success'}`}>
-                   {a.status === 'pending' ? 'En attente' : a.status === 'assigned' ? 'Assigné' : 'Terminé'}
-                 </span>
-                 <h3 className="text-white font-semibold mt-2">{a.patient_name}</h3>
-                 <div className="flex items-center gap-1.5 text-dark-300 text-sm mt-1">
+                 {statusBadge(a.status)}
+                 <h3 className="text-slate-800 font-medium mt-2">{a.patient_name}</h3>
+                 <div className="flex items-center gap-1.5 text-slate-500 text-sm mt-1">
                     <Phone size={12} /> {a.patient_phone || "N/A"}
                  </div>
             </div>
             
-            <div className="bg-dark-900 rounded-md p-3 text-sm text-dark-200 mb-3">
-              <p className="text-xs text-dark-400 uppercase font-medium mb-1">{a.appointment_type}</p>
+            <div className="bg-slate-50 rounded p-3 text-sm text-slate-600 mb-3">
+              <p className="text-xs text-slate-400 uppercase font-medium mb-1">{a.appointment_type}</p>
               {a.description || "Pas de description"}
             </div>
 
             {a.assigned_medic_id && (
-               <div className="flex items-center gap-2 text-xs text-dark-300 mb-3">
-                  <div className="w-5 h-5 rounded bg-accent-info/20 flex items-center justify-center text-accent-info font-semibold">{a.medic_first_name?.[0]}</div>
-                  Assigné à {a.medic_first_name} {a.medic_last_name}
+               <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
+                  <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-medium">{a.medic_first_name?.[0]}</div>
+                  {a.medic_first_name} {a.medic_last_name}
                </div>
             )}
 
-            <div className="flex gap-2 pt-2 border-t border-dark-700">
+            <div className="flex gap-2 pt-2 border-t">
                {a.status === 'pending' && hasPerm('manage_appointments') && (
-                 <button onClick={() => handleStatus(a.id, 'assign')} className="btn-primary flex-1 text-xs py-2">Prendre en charge</button>
+                 <button onClick={() => handleStatus(a.id, 'assign')} className="btn-primary flex-1 text-xs py-1.5">Prendre en charge</button>
                )}
                {a.status === 'assigned' && a.assigned_medic_id === user.id && (
-                 <button onClick={() => handleStatus(a.id, 'complete', 'Terminé via MDT')} className="btn-success flex-1 text-xs py-2">Terminer</button>
+                 <button onClick={() => handleStatus(a.id, 'complete', 'Terminé')} className="btn-success flex-1 text-xs py-1.5">Terminer</button>
                )}
                {a.status !== 'completed' && a.status !== 'cancelled' && (
-                 <button onClick={() => handleStatus(a.id, 'cancel')} className="btn-danger flex-1 text-xs py-2">Annuler</button>
+                 <button onClick={() => handleStatus(a.id, 'cancel')} className="btn-danger flex-1 text-xs py-1.5">Annuler</button>
                )}
             </div>
           </div>
         ))}
-        {filtered.length === 0 && <p className="text-dark-400 col-span-3 text-center py-10">Aucun rendez-vous trouvé.</p>}
+        {filtered.length === 0 && <p className="text-slate-400 col-span-3 text-center py-10">Aucun rendez-vous</p>}
       </div>
     </Layout>
   )
@@ -765,99 +728,86 @@ function Reports() {
     <Layout>
       <PageHeader 
         title="Rapports Médicaux" 
-        subtitle="Historique des interventions et traitements"
+        subtitle="Historique des interventions"
         action={
           <div className="flex gap-2">
              {filterPatientId && <button onClick={() => setFilterPatientId("")} className="btn-secondary text-sm">Voir tout</button>}
-             {hasPerm('create_reports') && <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2"><FilePlus size={16} /> Nouveau Rapport</button>}
+             {hasPerm('create_reports') && <button onClick={() => setShowModal(true)} className="btn-primary"><FilePlus size={16} className="mr-2" /> Nouveau rapport</button>}
           </div>
         }
       />
 
       <div className="space-y-3">
         {reports.map(r => (
-          <div key={r.id} className="card p-4 hover:border-dark-500 transition-colors relative group">
+          <div key={r.id} className="card p-4 relative group">
              {hasPerm('delete_reports') && (
-                <button onClick={() => handleDelete(r.id)} className="absolute top-3 right-3 p-1.5 text-dark-500 hover:text-accent-danger hover:bg-accent-danger/10 rounded transition-colors opacity-0 group-hover:opacity-100">
+                <button onClick={() => handleDelete(r.id)} className="absolute top-3 right-3 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                     <Trash2 size={14} />
                 </button>
              )}
-             <div className="flex justify-between items-start mb-3 pr-8">
+             <div className="flex justify-between items-start mb-3">
                 <div>
-                   <h3 className="text-white font-semibold">{r.patient_last_name} {r.patient_first_name}</h3>
-                   <div className="text-dark-300 text-sm">ID: <span className="font-mono text-med-500">{r.patient_identity_id}</span> · Médecin: {r.medic_first_name} {r.medic_last_name}</div>
+                   <h3 className="text-slate-800 font-medium">{r.patient_last_name} {r.patient_first_name}</h3>
+                   <div className="text-slate-500 text-sm">ID: <span className="font-mono text-primary-600">{r.patient_identity_id}</span> · Dr. {r.medic_first_name} {r.medic_last_name}</div>
                 </div>
                 <div className="text-right">
-                   <div className="text-med-500 font-semibold">{r.diagnosis}</div>
-                   <div className="text-dark-400 text-xs">{new Date(r.incident_date).toLocaleDateString()}</div>
+                   <div className="text-primary-600 font-medium">{r.diagnosis}</div>
+                   <div className="text-slate-400 text-xs">{new Date(r.incident_date).toLocaleDateString('fr-FR')}</div>
                 </div>
              </div>
              
-             <div className="grid md:grid-cols-2 gap-3 bg-dark-900 p-3 rounded-md text-sm">
+             <div className="grid md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded text-sm">
                 <div>
-                   <span className="data-label block mb-1">Contexte</span>
-                   <p className="text-dark-200">{r.notes || "Non précisé"}</p>
+                   <span className="label">Contexte</span>
+                   <p className="text-slate-600">{r.notes || "Non précisé"}</p>
                 </div>
                 <div>
-                   <span className="data-label block mb-1">Soins & Facture</span>
-                   <p className="text-white mb-1">{r.medications_given || "Aucun"}</p>
-                   <p className="text-med-500 font-semibold font-mono">{r.treatment}</p>
+                   <span className="label">Soins & Facture</span>
+                   <p className="text-slate-800 mb-1">{r.medications_given || "Aucun"}</p>
+                   <p className="text-emerald-600 font-medium font-mono">{r.treatment}</p>
                 </div>
              </div>
           </div>
         ))}
-        {reports.length === 0 && <p className="text-center text-dark-400 py-10">Aucun rapport enregistré.</p>}
+        {reports.length === 0 && <p className="text-center text-slate-400 py-10">Aucun rapport</p>}
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
-          <div className="bg-dark-800 border border-dark-600 w-full max-w-4xl rounded-lg overflow-hidden animate-fade-in max-h-[90vh] flex flex-col">
-            <div className="p-4 border-b border-dark-600 flex justify-between items-center flex-shrink-0">
-              <h2 className="text-lg font-bold text-white">Nouveau Rapport</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-dark-700 rounded"><X className="text-dark-300" size={18} /></button>
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-4xl shadow-xl max-h-[90vh] flex flex-col">
+            <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
+              <h2 className="font-semibold text-slate-800">Nouveau rapport</h2>
+              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-slate-100 rounded"><X size={18} /></button>
             </div>
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
               <div className="p-4 grid lg:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                   <div>
-                      <label className="data-label mb-2 block">1. Patient</label>
-                      <SelectField value={form.patient_id} onChange={e => setForm({...form, patient_id: e.target.value})} required>
-                         <option value="">-- Choisir Patient --</option>
-                         {patients.map(p => <option key={p.id} value={p.id}>{p.last_name} {p.first_name} (ID: {p.insurance_number})</option>)}
-                      </SelectField>
-                   </div>
-                   <div>
-                      <label className="data-label mb-2 block">2. Diagnostic / Maladie</label>
-                      <SelectField value={form.disease} onChange={e => setForm({...form, disease: e.target.value})} required>
-                         <option value="">-- Choisir Maladie --</option>
-                         {diseases.map(d => <option key={d} value={d}>{d}</option>)}
-                      </SelectField>
-                   </div>
-                   <div>
-                      <label className="data-label mb-2 block">3. Contexte</label>
-                      <textarea 
-                        className="input-field min-h-[120px] resize-none" 
-                        placeholder="Accident, fusillade, chute..." 
-                        value={form.context_notes} onChange={e => setForm({...form, context_notes: e.target.value})} 
-                      />
-                   </div>
+                   <SelectField label="Patient" value={form.patient_id} onChange={e => setForm({...form, patient_id: e.target.value})} required>
+                      <option value="">-- Sélectionner --</option>
+                      {patients.map(p => <option key={p.id} value={p.id}>{p.last_name} {p.first_name} ({p.insurance_number})</option>)}
+                   </SelectField>
+                   <SelectField label="Diagnostic" value={form.disease} onChange={e => setForm({...form, disease: e.target.value})} required>
+                      <option value="">-- Sélectionner --</option>
+                      {diseases.map(d => <option key={d} value={d}>{d}</option>)}
+                   </SelectField>
+                   <TextArea label="Contexte / Notes" placeholder="Circonstances, observations..." value={form.context_notes} onChange={e => setForm({...form, context_notes: e.target.value})} />
                 </div>
 
-                <div className="bg-dark-900 rounded-lg p-4 border border-dark-700 flex flex-col">
-                   <div className="flex justify-between items-center mb-3 pb-3 border-b border-dark-700">
-                      <label className="data-label">4. Soins & Services</label>
-                      <span className="text-med-500 font-bold font-mono text-lg">{form.total_cost}$</span>
+                <div className="bg-slate-50 rounded-lg p-4 border">
+                   <div className="flex justify-between items-center mb-3 pb-3 border-b">
+                      <span className="label mb-0">Soins & Services</span>
+                      <span className="text-emerald-600 font-semibold font-mono text-lg">{form.total_cost} €</span>
                    </div>
-                   <div className="space-y-4 flex-1 overflow-y-auto pr-1">
+                   <div className="space-y-4 max-h-[300px] overflow-y-auto">
                       {servicesList.map(cat => (
                          <div key={cat.cat}>
-                            <h4 className="text-dark-300 text-xs font-semibold uppercase tracking-wider mb-2">{cat.cat}</h4>
+                            <h4 className="text-slate-500 text-xs font-semibold uppercase mb-2">{cat.cat}</h4>
                             <div className="grid grid-cols-2 gap-2">
                                {cat.items.map(item => (
                                   <div key={item.n} onClick={() => toggleService(item)} 
-                                     className={`p-2.5 rounded-md cursor-pointer border transition-all text-sm flex justify-between items-center ${form.medications.includes(item.n) ? "bg-med-500/15 border-med-600 text-white" : "bg-dark-800 border-dark-600 text-dark-300 hover:border-dark-500"}`}>
+                                     className={`p-2 rounded cursor-pointer border text-sm flex justify-between items-center transition-colors ${form.medications.includes(item.n) ? "bg-primary-50 border-primary-300 text-primary-700" : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"}`}>
                                      <span className="truncate">{item.n}</span>
-                                     <span className="font-mono text-xs opacity-60">{item.p}$</span>
+                                     <span className="font-mono text-xs">{item.p}€</span>
                                   </div>
                                ))}
                             </div>
@@ -866,9 +816,9 @@ function Reports() {
                    </div>
                 </div>
               </div>
-              <div className="p-4 border-t border-dark-600 flex gap-3 flex-shrink-0">
+              <div className="p-4 border-t flex gap-3 flex-shrink-0">
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1">Annuler</button>
-                <button type="submit" className="btn-primary flex-1">Enregistrer ({form.total_cost}$)</button>
+                <button type="submit" className="btn-primary flex-1">Enregistrer ({form.total_cost}€)</button>
               </div>
             </form>
           </div>
@@ -889,14 +839,7 @@ function Admin() {
   const [userForm, setUserForm] = useState({ id: null, username: "", password: "", first_name: "", last_name: "", badge_number: "", grade_id: "" })
 
   const loadAdminData = () => {
-    fetch("/api/admin/stats", { credentials: "include" })
-      .then(r => {
-          if(!r.ok) throw new Error("Erreur chargement stats");
-          return r.json();
-      })
-      .then(setStats)
-      .catch(e => { console.error(e); setStats(null); });
-
+    fetch("/api/admin/stats", { credentials: "include" }).then(r => r.ok ? r.json() : null).then(setStats).catch(() => setStats(null))
     fetch("/api/admin/users", { credentials: "include" }).then(r => r.json()).then(setUsersList)
     fetch("/api/admin/grades", { credentials: "include" }).then(r => r.json()).then(setGrades)
   }
@@ -916,17 +859,14 @@ function Admin() {
     const method = userForm.id ? "PUT" : "POST";
     const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(userForm), credentials: "include" });
     if(res.ok) { setShowUserModal(false); loadAdminData(); }
-    else alert("Erreur lors de l'enregistrement (Vérifiez les grades)");
+    else alert("Erreur lors de l'enregistrement");
   }
   
   const deleteUser = async (id) => {
-      if(!window.confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur DÉFINITIVEMENT ?")) return;
+      if(!window.confirm("Supprimer définitivement cet utilisateur ?")) return;
       const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE", credentials: "include" });
       if(res.ok) loadAdminData();
-      else {
-          const d = await res.json();
-          alert(d.error || "Erreur suppression");
-      }
+      else { const d = await res.json(); alert(d.error || "Erreur"); }
   }
 
   const editUser = (u) => { setUserForm({ id: u.id, username: u.username, password: "", first_name: u.first_name, last_name: u.last_name, badge_number: u.badge_number, grade_id: u.grade_id }); setShowUserModal(true); }
@@ -942,44 +882,44 @@ function Admin() {
     { key: "create_reports", label: "Créer Rapports" },
     { key: "delete_reports", label: "Supprimer Rapports" },
     { key: "manage_appointments", label: "Gérer RDV" },
-    { key: "delete_appointments", label: "Supprimer RDV" },
     { key: "view_roster", label: "Voir Effectifs" },
     { key: "manage_users", label: "Gérer Utilisateurs" },
     { key: "delete_users", label: "Supprimer Utilisateurs" },
-    { key: "manage_grades", label: "Gérer Grades" },
-    { key: "view_logs", label: "Voir Logs" }
   ]
 
   return (
     <Layout>
-      <PageHeader title="Administration" subtitle="Gestion globale du service" />
-      <div className="flex border-b border-dark-600 mb-6">
-        <button onClick={() => setActiveTab("users")} className={`px-5 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === "users" ? "border-med-500 text-white" : "border-transparent text-dark-300 hover:text-white"}`}>Utilisateurs</button>
-        <button onClick={() => setActiveTab("grades")} className={`px-5 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === "grades" ? "border-med-500 text-white" : "border-transparent text-dark-300 hover:text-white"}`}>Grades & Permissions</button>
-        <button onClick={() => setActiveTab("stats")} className={`px-5 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === "stats" ? "border-med-500 text-white" : "border-transparent text-dark-300 hover:text-white"}`}>Statistiques</button>
+      <PageHeader title="Administration" subtitle="Gestion du système" />
+      
+      <div className="flex border-b mb-6">
+        {["users", "grades", "stats"].map(tab => (
+          <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === tab ? "border-primary-600 text-primary-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
+            {tab === "users" ? "Utilisateurs" : tab === "grades" ? "Grades" : "Statistiques"}
+          </button>
+        ))}
       </div>
 
       {activeTab === "users" && (
-        <div className="card overflow-hidden">
-          <div className="p-4 border-b border-dark-600 flex justify-end">
-             <button onClick={newUser} className="btn-primary flex items-center gap-2"><UserPlus size={16} /> Créer Utilisateur</button>
+        <div className="card">
+          <div className="p-4 border-b flex justify-end">
+             <button onClick={newUser} className="btn-primary"><UserPlus size={16} className="mr-2" /> Créer</button>
           </div>
-          <table className="w-full text-left">
-            <thead className="bg-dark-900"><tr><th className="table-header">Utilisateur</th><th className="table-header">Badge</th><th className="table-header">Grade</th><th className="table-header">Action</th></tr></thead>
+          <table className="w-full">
+            <thead><tr><th className="table-header">Utilisateur</th><th className="table-header">Badge</th><th className="table-header">Grade</th><th className="table-header">Actions</th></tr></thead>
             <tbody>
                {usersList.map(u => (
                  <tr key={u.id} className="table-row">
-                   <td className="p-4">
-                      <div className="font-semibold text-white">{u.first_name} {u.last_name}</div>
-                      <div className="text-xs text-dark-300 font-mono">@{u.username}</div>
+                   <td className="table-cell">
+                      <div className="font-medium text-slate-800">{u.first_name} {u.last_name}</div>
+                      <div className="text-xs text-slate-400 font-mono">@{u.username}</div>
                    </td>
-                   <td className="p-4 text-dark-300 font-mono text-sm">{u.badge_number}</td>
-                   <td className="p-4"><span className="badge" style={{ backgroundColor: u.grade_color + '20', color: u.grade_color }}>{u.grade_name || "Aucun"}</span></td>
-                   <td className="p-4">
+                   <td className="table-cell text-slate-500 font-mono text-sm">{u.badge_number}</td>
+                   <td className="table-cell"><span className="badge" style={{ backgroundColor: u.grade_color + '20', color: u.grade_color }}>{u.grade_name || "—"}</span></td>
+                   <td className="table-cell">
                      <div className="flex items-center gap-1">
-                       <button onClick={() => editUser(u)} className="p-2 bg-dark-700 hover:bg-dark-600 rounded text-white transition-colors"><Edit2 size={14}/></button>
+                       <button onClick={() => editUser(u)} className="p-2 hover:bg-slate-100 rounded text-slate-500"><Edit2 size={14}/></button>
                        {hasPerm('delete_users') && u.id !== user.id && (
-                           <button onClick={() => deleteUser(u.id)} className="p-2 bg-accent-danger/10 hover:bg-accent-danger/20 text-accent-danger rounded transition-colors"><Trash2 size={14}/></button>
+                           <button onClick={() => deleteUser(u.id)} className="p-2 hover:bg-red-50 text-slate-500 hover:text-red-500 rounded"><Trash2 size={14}/></button>
                        )}
                      </div>
                    </td>
@@ -993,22 +933,20 @@ function Admin() {
       {activeTab === "grades" && (
         <div className="space-y-4">
           {grades.map(g => (
-            <div key={g.id} className="card p-5">
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-dark-600">
-                 <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: g.color }} />
-                    <div>
-                      <h3 className="text-lg font-bold text-white">{g.name}</h3>
-                      <p className="text-dark-300 text-sm">{g.category} · Niveau {g.level}</p>
-                    </div>
+            <div key={g.id} className="card p-4">
+              <div className="flex items-center gap-3 mb-4 pb-4 border-b">
+                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: g.color }} />
+                 <div>
+                   <h3 className="font-semibold text-slate-800">{g.name}</h3>
+                   <p className="text-slate-500 text-sm">{g.category} · Niveau {g.level}</p>
                  </div>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {permissionsList.map(p => (
                   <label key={p.key} className="flex items-center gap-2 cursor-pointer group">
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${g.permissions?.[p.key] ? 'bg-med-500 border-med-500' : 'border-dark-500 bg-dark-800 group-hover:border-dark-400'}`}>{g.permissions?.[p.key] && <Check size={12} className="text-dark-950" />}</div>
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${g.permissions?.[p.key] ? 'bg-primary-600 border-primary-600' : 'border-slate-300 group-hover:border-slate-400'}`}>{g.permissions?.[p.key] && <Check size={12} className="text-white" />}</div>
                     <input type="checkbox" className="hidden" checked={!!g.permissions?.[p.key]} onChange={() => togglePermission(g, p.key)} />
-                    <span className={`text-sm ${g.permissions?.[p.key] ? 'text-white' : 'text-dark-400'}`}>{p.label}</span>
+                    <span className={`text-sm ${g.permissions?.[p.key] ? 'text-slate-800' : 'text-slate-500'}`}>{p.label}</span>
                   </label>
                 ))}
               </div>
@@ -1019,42 +957,42 @@ function Admin() {
 
       {activeTab === "stats" && (
          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {stats && stats.patients ? (
+            {stats ? (
                 <>
-                    <StatCard label="Total Dossiers" value={stats.patients.total} colorClass="text-blue-400" icon={Users} />
-                    <StatCard label="Rapports Émis" value={stats.reports.total} colorClass="text-green-400" icon={FileText} />
-                    <StatCard label="RDV En Attente" value={stats.appointments.pending} colorClass="text-yellow-400" icon={Clock} />
-                    <StatCard label="Effectif Total" value={stats.users.total} colorClass="text-ems-400" icon={Activity} />
+                    <StatCard label="Patients" value={stats.patients?.total || 0} icon={Users} color="blue" />
+                    <StatCard label="Rapports" value={stats.reports?.total || 0} icon={FileText} color="green" />
+                    <StatCard label="RDV en attente" value={stats.appointments?.pending || 0} icon={Clock} color="yellow" />
+                    <StatCard label="Effectif" value={stats.users?.total || 0} icon={Activity} color="blue" />
                 </>
             ) : (
-                <div className="col-span-4 text-center text-dark-400 py-10">Chargement des statistiques...</div>
+                <div className="col-span-4 text-center text-slate-400 py-10">Chargement...</div>
             )}
          </div>
       )}
 
       {showUserModal && (
-        <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
-           <div className="bg-dark-800 border border-dark-600 w-full max-w-lg rounded-lg overflow-hidden animate-fade-in">
-              <div className="p-4 border-b border-dark-600">
-                <h2 className="text-lg font-bold text-white">{userForm.id ? "Modifier" : "Créer"} Utilisateur</h2>
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+           <div className="bg-white rounded-lg w-full max-w-lg shadow-xl">
+              <div className="p-4 border-b">
+                <h2 className="font-semibold text-slate-800">{userForm.id ? "Modifier" : "Créer"} utilisateur</h2>
               </div>
               <form onSubmit={handleUserSubmit} className="p-4 space-y-4">
                  <div className="grid grid-cols-2 gap-3">
-                    <InputField placeholder="Prénom" value={userForm.first_name} onChange={e => setUserForm({...userForm, first_name: e.target.value})} required />
-                    <InputField placeholder="Nom" value={userForm.last_name} onChange={e => setUserForm({...userForm, last_name: e.target.value})} required />
+                    <InputField label="Prénom" value={userForm.first_name} onChange={e => setUserForm({...userForm, first_name: e.target.value})} required />
+                    <InputField label="Nom" value={userForm.last_name} onChange={e => setUserForm({...userForm, last_name: e.target.value})} required />
                  </div>
                  <div className="grid grid-cols-2 gap-3">
-                    <InputField placeholder="Identifiant" value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} required />
-                    <InputField placeholder="Matricule" value={userForm.badge_number} onChange={e => setUserForm({...userForm, badge_number: e.target.value})} />
+                    <InputField label="Identifiant" value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} required />
+                    <InputField label="Matricule" value={userForm.badge_number} onChange={e => setUserForm({...userForm, badge_number: e.target.value})} />
                  </div>
-                 <InputField type="password" placeholder={userForm.id ? "Nouveau mot de passe (vide = inchangé)" : "Mot de passe"} value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} required={!userForm.id} />
-                 <SelectField value={userForm.grade_id} onChange={e => setUserForm({...userForm, grade_id: e.target.value})} required>
-                    <option value="">-- Grade --</option>
+                 <InputField label="Mot de passe" type="password" placeholder={userForm.id ? "Laisser vide si inchangé" : ""} value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} required={!userForm.id} />
+                 <SelectField label="Grade" value={userForm.grade_id} onChange={e => setUserForm({...userForm, grade_id: e.target.value})} required>
+                    <option value="">-- Sélectionner --</option>
                     {grades.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                  </SelectField>
                  <div className="flex gap-3 pt-2">
                     <button type="button" onClick={() => setShowUserModal(false)} className="btn-secondary flex-1">Annuler</button>
-                    <button type="submit" className="btn-primary flex-1">Sauvegarder</button>
+                    <button type="submit" className="btn-primary flex-1">Enregistrer</button>
                  </div>
               </form>
            </div>
@@ -1090,90 +1028,69 @@ function Diagnosis() {
 
   return (
     <Layout>
-      <PageHeader title="Calculatrice Médicale" subtitle="Diagnostic assisté" />
+      <PageHeader title="Outil de Diagnostic" subtitle="Aide au diagnostic médical" />
       <div className="grid lg:grid-cols-2 gap-6 items-start">
         <div className="card p-5">
-          <form onSubmit={handleAnalyze} className="space-y-5">
-            <div>
-              <label className="data-label mb-2 block">1. Symptôme Principal</label>
-              <SelectField 
-                value={selectedSymptom} 
-                onChange={e => setSelectedSymptom(e.target.value)} 
-                required
-              >
-                <option value="">-- Sélectionner --</option>
-                {symptoms.map(s => <option key={s} value={s}>{s}</option>)}
-              </SelectField>
-            </div>
+          <form onSubmit={handleAnalyze} className="space-y-4">
+            <SelectField label="Symptôme principal" value={selectedSymptom} onChange={e => setSelectedSymptom(e.target.value)} required>
+              <option value="">-- Sélectionner --</option>
+              {symptoms.map(s => <option key={s} value={s}>{s}</option>)}
+            </SelectField>
 
             <div>
-              <label className="data-label mb-3 block">2. Constantes Vitales</label>
+              <p className="label">Constantes vitales</p>
               <div className="grid grid-cols-2 gap-3">
-                <div className="relative">
-                   <span className="absolute left-3 top-2 text-dark-400 text-xs font-medium z-10">Temp (°C)</span>
-                   <DiagnosisInput type="number" step="0.1" value={vitals.temp} onChange={e => setVitals({...vitals, temp: e.target.value})} required />
-                </div>
-                <div className="relative">
-                   <span className="absolute left-3 top-2 text-dark-400 text-xs font-medium z-10">BPM</span>
-                   <DiagnosisInput type="number" value={vitals.hr} onChange={e => setVitals({...vitals, hr: e.target.value})} required />
-                </div>
-                <div className="relative">
-                   <span className="absolute left-3 top-2 text-dark-400 text-xs font-medium z-10">SpO2 (%)</span>
-                   <DiagnosisInput type="number" value={vitals.o2} onChange={e => setVitals({...vitals, o2: e.target.value})} required />
-                </div>
-                <div className="relative">
-                   <span className="absolute left-3 top-2 text-dark-400 text-xs font-medium z-10">Tension (Sys)</span>
-                   <DiagnosisInput type="number" value={vitals.bp} onChange={e => setVitals({...vitals, bp: e.target.value})} required />
-                </div>
+                <InputField placeholder="Température (°C)" type="number" step="0.1" value={vitals.temp} onChange={e => setVitals({...vitals, temp: e.target.value})} required />
+                <InputField placeholder="Pouls (BPM)" type="number" value={vitals.hr} onChange={e => setVitals({...vitals, hr: e.target.value})} required />
+                <InputField placeholder="SpO2 (%)" type="number" value={vitals.o2} onChange={e => setVitals({...vitals, o2: e.target.value})} required />
+                <InputField placeholder="Tension (Sys)" type="number" value={vitals.bp} onChange={e => setVitals({...vitals, bp: e.target.value})} required />
               </div>
             </div>
             
-            <button type="submit" disabled={loading} className="btn-primary w-full py-3 flex items-center justify-center gap-2">
-              {loading ? "Analyse..." : <><Zap size={18} /> Lancer Diagnostic</>}
+            <button type="submit" disabled={loading} className="btn-primary w-full py-2.5">
+              {loading ? "Analyse..." : "Analyser"}
             </button>
           </form>
         </div>
 
         <div>
           {result && result.status !== "unknown" ? (
-             <div className={`card p-5 ${result.status === 'confirmed' ? 'border-med-600' : 'border-accent-warning'}`}>
-                <div className="flex items-center gap-2 mb-4 pb-4 border-b border-dark-600">
-                  <div className={`w-2 h-2 rounded-full ${result.status === 'confirmed' ? 'bg-med-500' : 'bg-accent-warning'}`} />
-                  <h2 className="text-lg font-bold text-white">
-                      {result.status === 'confirmed' ? "Diagnostic Confirmé" : "Plusieurs Possibilités"}
+             <div className={`card p-5 ${result.status === 'confirmed' ? 'border-emerald-200' : 'border-amber-200'}`}>
+                <div className="flex items-center gap-2 mb-4 pb-4 border-b">
+                  <div className={`w-2 h-2 rounded-full ${result.status === 'confirmed' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                  <h2 className="font-semibold text-slate-800">
+                      {result.status === 'confirmed' ? "Diagnostic confirmé" : "Diagnostics possibles"}
                   </h2>
                 </div>
-                <p className="text-dark-200 mb-4 text-sm">{result.message}</p>
+                <p className="text-slate-600 mb-4 text-sm">{result.message}</p>
                 
-                <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[350px] overflow-y-auto">
                    {result.results.map((r, i) => (
-                      <div key={i} className="bg-dark-900 p-4 rounded-md border border-dark-700 hover:border-dark-500 transition-colors">
+                      <div key={i} className="bg-slate-50 p-4 rounded border">
                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-bold text-white">{r.name}</span>
-                            <span className={`badge ${r.confidence > 80 ? 'badge-success' : 'badge-warning'}`}>
-                                {r.confidence}%
-                            </span>
+                            <span className="font-medium text-slate-800">{r.name}</span>
+                            <span className={`badge ${r.confidence > 80 ? 'badge-green' : 'badge-yellow'}`}>{r.confidence}%</span>
                          </div>
-                         <div className="grid grid-cols-2 gap-2 text-sm pt-2 border-t border-dark-700">
-                            <div><span className="data-label block mb-0.5">Traitement</span><span className="text-med-500 font-medium">{r.med}</span></div>
-                            <div><span className="data-label block mb-0.5">Cible</span><span className="text-dark-200">{r.organ}</span></div>
+                         <div className="grid grid-cols-2 gap-2 text-sm pt-2 border-t">
+                            <div><span className="text-slate-400 text-xs">Traitement</span><p className="text-primary-600 font-medium">{r.med}</p></div>
+                            <div><span className="text-slate-400 text-xs">Organe cible</span><p className="text-slate-600">{r.organ}</p></div>
                          </div>
                       </div>
                    ))}
                 </div>
-                <button onClick={reset} className="btn-secondary w-full mt-4">Nouveau Patient</button>
+                <button onClick={reset} className="btn-secondary w-full mt-4">Nouveau diagnostic</button>
              </div>
           ) : result ? (
             <div className="card p-8 text-center">
-               <HelpCircle size={40} className="mx-auto text-dark-400 mb-3" />
-               <h3 className="text-lg font-bold text-white">Aucun Résultat</h3>
-               <p className="text-dark-300 mt-2 mb-4 text-sm">Les constantes ne correspondent à aucune pathologie connue.</p>
-               <button onClick={reset} className="text-med-500 hover:text-med-400 font-medium text-sm">Réessayer</button>
+               <HelpCircle size={40} className="mx-auto text-slate-300 mb-3" />
+               <h3 className="font-semibold text-slate-800">Aucun résultat</h3>
+               <p className="text-slate-500 mt-2 mb-4 text-sm">Les constantes ne correspondent à aucune pathologie connue.</p>
+               <button onClick={reset} className="text-primary-600 hover:text-primary-700 font-medium text-sm">Réessayer</button>
             </div>
           ) : (
-            <div className="card border-dashed border-dark-600 p-12 text-center text-dark-400 flex flex-col items-center">
-               <Activity className="mb-3 opacity-40" size={32} />
-               <span className="text-sm">En attente des données vitales...</span>
+            <div className="card border-dashed p-12 text-center text-slate-400 flex flex-col items-center">
+               <Stethoscope className="mb-3 opacity-40" size={32} />
+               <span className="text-sm">Renseignez les constantes vitales</span>
             </div>
           )}
         </div>
@@ -1183,54 +1100,46 @@ function Diagnosis() {
 }
 
 function Dashboard() {
-  const { user, isAdmin } = useAuth()
+  const { user } = useAuth()
   const [stats, setStats] = useState(null)
 
   useEffect(() => {
-    fetch("/api/admin/stats", { credentials: "include" })
-      .then(r => {
-          if(r.ok) return r.json();
-          return null;
-      })
-      .then(setStats)
-      .catch(() => {})
+    fetch("/api/admin/stats", { credentials: "include" }).then(r => r.ok ? r.json() : null).then(setStats).catch(() => {})
   }, [])
 
   return (
     <Layout>
-      <PageHeader 
-        title={`Bienvenue, ${user?.first_name || user?.username}`} 
-        subtitle={<span className="font-mono">Badge: {user?.badge_number} · {user?.grade_name || "En service"}</span>} 
-      />
+      <PageHeader title={`Bonjour, ${user?.first_name || user?.username}`} subtitle={`${user?.grade_name || "Personnel médical"} · Badge ${user?.badge_number || "N/A"}`} />
       
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Total Patients" value={stats?.patients?.total || "—"} colorClass="text-blue-400" icon={Users} />
-        <StatCard label="Rapports Émis" value={stats?.reports?.total || "—"} colorClass="text-green-400" icon={FileText} />
-        <StatCard label="RDV En Attente" value={stats?.appointments?.pending || "—"} colorClass="text-yellow-400" icon={Clock} />
-        <StatCard label="Effectif Total" value={stats?.users?.total || "—"} colorClass="text-ems-400" icon={Activity} />
+        <StatCard label="Patients" value={stats?.patients?.total ?? "—"} icon={Users} color="blue" />
+        <StatCard label="Rapports" value={stats?.reports?.total ?? "—"} icon={FileText} color="green" />
+        <StatCard label="RDV en attente" value={stats?.appointments?.pending ?? "—"} icon={Clock} color="yellow" />
+        <StatCard label="Effectif" value={stats?.users?.total ?? "—"} icon={Activity} color="blue" />
       </div>
 
+      <h2 className="font-semibold text-slate-800 mb-4">Accès rapide</h2>
       <div className="grid md:grid-cols-3 gap-4">
-        <Link to="/diagnosis" className="card p-5 hover:border-med-600 transition-colors group">
-          <div className="w-10 h-10 bg-med-500/10 rounded-lg flex items-center justify-center text-med-500 mb-3 group-hover:bg-med-500 group-hover:text-dark-950 transition-colors">
+        <Link to="/diagnosis" className="card p-5 hover:shadow-md transition-shadow group">
+          <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center text-primary-600 mb-3">
             <Stethoscope size={20} />
           </div>
-          <h3 className="font-semibold text-white mb-0.5">Démarrer Diagnostic</h3>
-          <p className="text-dark-300 text-sm">Assistant urgences</p>
+          <h3 className="font-medium text-slate-800 mb-0.5 flex items-center gap-2">Diagnostic <ChevronRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" /></h3>
+          <p className="text-slate-500 text-sm">Outil d'aide au diagnostic</p>
         </Link>
-        <Link to="/patients" className="card p-5 hover:border-dark-500 transition-colors group">
-          <div className="w-10 h-10 bg-dark-700 rounded-lg flex items-center justify-center text-dark-300 mb-3 group-hover:bg-accent-info group-hover:text-white transition-colors">
+        <Link to="/patients" className="card p-5 hover:shadow-md transition-shadow group">
+          <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 mb-3">
             <Users size={20} />
           </div>
-          <h3 className="font-semibold text-white mb-0.5">Gestion Patients</h3>
-          <p className="text-dark-300 text-sm">Créer ou modifier dossiers</p>
+          <h3 className="font-medium text-slate-800 mb-0.5 flex items-center gap-2">Patients <ChevronRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" /></h3>
+          <p className="text-slate-500 text-sm">Gestion des dossiers</p>
         </Link>
-        <Link to="/reports" className="card p-5 hover:border-dark-500 transition-colors group">
-          <div className="w-10 h-10 bg-dark-700 rounded-lg flex items-center justify-center text-dark-300 mb-3 group-hover:bg-accent-warning group-hover:text-dark-950 transition-colors">
+        <Link to="/reports" className="card p-5 hover:shadow-md transition-shadow group">
+          <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 mb-3">
             <FilePlus size={20} />
           </div>
-          <h3 className="font-semibold text-white mb-0.5">Rapports</h3>
-          <p className="text-dark-300 text-sm">Historique interventions</p>
+          <h3 className="font-medium text-slate-800 mb-0.5 flex items-center gap-2">Rapports <ChevronRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" /></h3>
+          <p className="text-slate-500 text-sm">Interventions médicales</p>
         </Link>
       </div>
     </Layout>
@@ -1242,24 +1151,20 @@ function Roster() {
   useEffect(() => { fetch("/api/users/roster", { credentials: "include" }).then(r => r.json()).then(setMembers) }, [])
   return (
     <Layout>
-      <PageHeader title="Effectifs en Service" />
+      <PageHeader title="Effectifs" subtitle="Personnel en service" />
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
         {members.map(m => (
-          <div key={m.id} className="card p-4 flex items-center gap-3 hover:border-dark-500 transition-colors">
-             <div className="w-10 h-10 rounded-lg bg-dark-700 flex items-center justify-center text-white font-semibold text-sm overflow-hidden ring-1 ring-dark-600">
-                {m.profile_picture ? (
-                    <img src={m.profile_picture} className="w-full h-full object-cover" />
-                ) : (
-                    m.username?.[0]
-                )}
+          <div key={m.id} className="card p-4 flex items-center gap-3">
+             <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-medium text-sm overflow-hidden">
+                {m.profile_picture ? <img src={m.profile_picture} className="w-full h-full object-cover" /> : m.username?.[0].toUpperCase()}
              </div>
              <div className="flex-1 min-w-0">
-                <h4 className="text-white font-medium truncate">{m.first_name || m.username} {m.last_name}</h4>
-                <div className="text-xs font-semibold" style={{ color: m.grade_color }}>{m.grade_name}</div>
+                <h4 className="text-slate-800 font-medium truncate">{m.first_name || m.username} {m.last_name}</h4>
+                <div className="text-xs font-medium" style={{ color: m.grade_color }}>{m.grade_name}</div>
              </div>
              <div className="text-right flex-shrink-0">
-                <div className="text-dark-400 font-mono text-xs">{m.badge_number}</div>
-                <div className="text-dark-400 text-xs">{m.phone || "—"}</div>
+                <div className="text-slate-400 font-mono text-xs">{m.badge_number}</div>
+                <div className="text-slate-400 text-xs">{m.phone || "—"}</div>
              </div>
           </div>
         ))}
@@ -1271,21 +1176,21 @@ function Roster() {
 function Landing() {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-dark-950 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4">
        <div className="text-center space-y-6">
-          <div className="w-20 h-20 bg-med-500 rounded-2xl flex items-center justify-center mx-auto">
-            <Shield size={40} className="text-dark-950" strokeWidth={2} />
+          <div className="w-20 h-20 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
+            <Heart size={40} className="text-white" fill="white" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold text-white tracking-tight">EMS TERMINAL</h1>
-            <p className="text-dark-300 mt-1 font-mono">Medical Response Services — RMB</p>
+            <h1 className="text-3xl font-bold text-slate-800">MRSA</h1>
+            <p className="text-slate-500 mt-1">Système de Gestion Médicale</p>
           </div>
           <div className="flex gap-3 justify-center pt-2">
-            <Link to="/login" className="btn-primary px-8 py-3">Personnel Médical</Link>
-            <button onClick={() => navigate('/book')} className="btn-secondary px-8 py-3">Prendre RDV</button>
+            <Link to="/login" className="btn-primary px-6 py-2.5">Connexion Personnel</Link>
+            <button onClick={() => navigate('/book')} className="btn-secondary px-6 py-2.5">Prendre RDV</button>
           </div>
        </div>
-       <p className="absolute bottom-6 text-dark-500 text-xs font-mono">v2.1.0 — Terminal Sécurisé</p>
+       <p className="absolute bottom-6 text-slate-400 text-xs">© 2024 MRSA · Tous droits réservés</p>
     </div>
   )
 }
@@ -1304,40 +1209,32 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
        <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <div className="w-14 h-14 bg-med-500 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <Shield size={28} className="text-dark-950" strokeWidth={2.5} />
+            <div className="w-14 h-14 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow">
+              <Heart size={28} className="text-white" fill="white" />
             </div>
-            <h1 className="text-xl font-bold text-white">Connexion EMS</h1>
-            <p className="text-dark-300 text-sm mt-1">Terminal Médical Sécurisé</p>
+            <h1 className="text-xl font-semibold text-slate-800">Connexion</h1>
+            <p className="text-slate-500 text-sm mt-1">Système de Gestion Médicale MRSA</p>
           </div>
           
           <div className="card p-5">
-            {error && <div className="bg-accent-danger/15 border border-accent-danger/30 text-accent-danger p-3 rounded-md mb-4 text-sm text-center">{error}</div>}
+            {error && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded mb-4 text-sm text-center">{error}</div>}
             <form onSubmit={handleSubmit} className="space-y-4">
-               <div>
-                 <label className="data-label mb-1.5 block">Identifiant</label>
-                 <InputField placeholder="nom.prenom" value={form.username} onChange={e => setForm({...form, username: e.target.value})} />
-               </div>
-               <div>
-                 <label className="data-label mb-1.5 block">Mot de passe</label>
-                 <InputField type="password" placeholder="••••••••" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
-               </div>
-               <button type="submit" className="btn-primary w-full py-3">Se connecter</button>
+               <InputField label="Identifiant" placeholder="nom.prenom" value={form.username} onChange={e => setForm({...form, username: e.target.value})} />
+               <InputField label="Mot de passe" type="password" placeholder="••••••••" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
+               <button type="submit" className="btn-primary w-full py-2.5">Se connecter</button>
             </form>
           </div>
           
-          <p className="text-center text-dark-500 text-xs mt-6">
-            <Link to="/" className="hover:text-dark-300 transition-colors">← Retour à l'accueil</Link>
+          <p className="text-center text-slate-400 text-xs mt-6">
+            <Link to="/" className="hover:text-slate-600">← Retour à l'accueil</Link>
           </p>
        </div>
     </div>
   )
 }
-
-const Placeholder = ({ title }) => <Layout><PageHeader title={title} /><div className="card p-8 text-center text-dark-400">Module en construction...</div></Layout>
 
 export default function App() {
   return (
@@ -1363,7 +1260,7 @@ export default function App() {
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="min-h-screen bg-dark-950 flex items-center justify-center text-med-500 font-mono text-sm">Initialisation du terminal...</div>
+  if (loading) return <div className="min-h-screen bg-slate-100 flex items-center justify-center text-slate-500 text-sm">Chargement...</div>
   if (!user) return <Navigate to="/login" />
   return children
 }
