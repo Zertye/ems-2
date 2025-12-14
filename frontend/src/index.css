@@ -5,27 +5,38 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #37559A;
-  --bg-secondary: #ffffff;
-  --bg-sidebar: #0f172a;
-  --bg-sidebar-hover: #1e293b;
-  --bg-input: #37559A;
-  --border-light: #e2e8f0;
-  --border-medium: #cbd5e1;
-  --text-primary: #0f172a;
+  /* === BACKGROUNDS === */
+  --bg-primary: #f1f5f9;            /* Fond principal clair et neutre */
+  --bg-secondary: #ffffff;          /* Cartes / panneaux */
+  --bg-sidebar: #0b1220;            /* Sidebar plus profonde, moins bleue */
+  --bg-sidebar-hover: #162033;      /* Hover doux, pas agressif */
+  --bg-input: #ffffff;              /* Inputs sobres */
+
+  /* === BORDERS === */
+  --border-light: #e5e7eb;
+  --border-medium: #d1d5db;
+
+  /* === TEXT === */
+  --text-primary: #0f172a;          /* Texte principal */
   --text-secondary: #475569;
   --text-muted: #94a3b8;
-  --text-sidebar: #cbd5e1;
-  --accent-primary: #2563eb;
-  --accent-primary-hover: #1d4ed8;
-  --accent-light: #dbeafe;
-  --accent-success: #059669;
-  --accent-success-light: #d1fae5;
-  --accent-warning: #d97706;
+  --text-sidebar: #c7d2fe;          /* Plus doux que blanc */
+
+  /* === ACCENTS (désaturés) === */
+  --accent-primary: #3b5ccc;        /* Bleu plus calme */
+  --accent-primary-hover: #2f4bb2;
+  --accent-light: #eef2ff;
+
+  --accent-success: #15803d;
+  --accent-success-light: #dcfce7;
+
+  --accent-warning: #b45309;
   --accent-warning-light: #fef3c7;
-  --accent-danger: #dc2626;
+
+  --accent-danger: #b91c1c;
   --accent-danger-light: #fee2e2;
 }
+
 
 @layer base {
   body {
