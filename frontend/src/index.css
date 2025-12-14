@@ -202,8 +202,8 @@
   /* Watermark */
   .watermark {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    bottom: 15px;
+    right: 15px;
     width: 500px;
     height: 500px;
     opacity: 0.05;
