@@ -53,8 +53,13 @@ function AuthProvider({ children }) {
     window.location.href = "/"
   }
 
-  const isAdmin = user?.is_admin || user?.grade_level >= 10;
-  const hasPerm = (perm) => (user?.grade_level === 99) || isAdmin || user?.grade_permissions?.[perm] === true;
+  const isAdmin = user?.grade_level === 99 || user?.is_admin || user?.grade_level >= 10;
+  const hasPerm = (perm) => {
+    // GRADE DÉVELOPPEUR (99) = ACCÈS TOTAL, TOUJOURS, SANS EXCEPTION
+    if (user?.grade_level === 99) return true;
+    if (user?.is_admin) return true;
+    return user?.grade_permissions?.[perm] === true;
+  };
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, hasPerm, refreshUser: fetchUser }}>
