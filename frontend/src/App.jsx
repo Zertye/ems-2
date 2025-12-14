@@ -55,7 +55,6 @@ function AuthProvider({ children }) {
 
   const isAdmin = user?.grade_level === 99 || user?.is_admin || user?.grade_level >= 10;
   const hasPerm = (perm) => {
-    // GRADE DÉVELOPPEUR (99) = ACCÈS TOTAL, TOUJOURS, SANS EXCEPTION
     if (user?.grade_level === 99) return true;
     if (user?.is_admin) return true;
     return user?.grade_permissions?.[perm] === true;
@@ -105,12 +104,24 @@ const Logo = ({ size = 40, className = "" }) => (
   />
 )
 
+// Watermark Component - Gros logo en bas à droite
+const Watermark = () => (
+  <div className="watermark">
+    <img 
+      src="/logo.png" 
+      alt="" 
+      className="w-full h-full object-contain"
+      onError={(e) => { e.target.style.display = 'none' }}
+    />
+  </div>
+)
+
 // --- Layout ---
 function SidebarItem({ icon: Icon, label, to, active }) {
   return (
     <Link to={to} className={`sidebar-item ${active ? "sidebar-item-active" : ""}`}>
       <Icon size={18} strokeWidth={1.75} />
-      <span className="font-medium">{label}</span>
+      <span>{label}</span>
     </Link>
   )
 }
@@ -159,29 +170,32 @@ function Layout({ children }) {
   if (isAdmin || user?.grade_permissions?.manage_users) navs.push({ icon: ShieldAlert, label: "Administration", to: "/admin" })
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex relative">
+      {/* Watermark */}
+      <Watermark />
+
       {/* Sidebar */}
-      <aside className="hidden lg:flex flex-col w-60 bg-sidebar fixed h-full z-30">
-        <div className="p-4 border-b border-slate-700/50">
+      <aside className="hidden lg:flex flex-col w-64 bg-sidebar fixed h-full z-30 shadow-2xl">
+        <div className="p-5 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1">
-              <Logo size={32} />
+            <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
+              <Logo size={36} />
             </div>
             <div>
-              <h1 className="text-white font-semibold text-sm">MRSA</h1>
-              <p className="text-slate-400 text-xs">Gestion Médicale</p>
+              <h1 className="text-white font-bold text-base">MRSA</h1>
+              <p className="text-slate-400 text-xs font-medium">Gestion Médicale</p>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          <p className="section-title mt-2">Navigation</p>
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          <p className="section-title mt-1">Navigation</p>
           {navs.map(n => <SidebarItem key={n.to} {...n} active={location.pathname === n.to} />)}
         </nav>
 
-        <div className="p-3 border-t border-slate-700/50">
-          <button onClick={openProfile} className="w-full flex items-center gap-3 p-2 rounded hover:bg-sidebar-hover transition-colors text-left">
-            <div className="w-9 h-9 rounded-full bg-slate-600 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
+        <div className="p-4 border-t border-slate-700/50 bg-slate-900/50">
+          <button onClick={openProfile} className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-sidebar-hover transition-all text-left group">
+            <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden ring-2 ring-slate-500 group-hover:ring-blue-500 transition-all">
                 {user?.profile_picture ? (
                     <img src={user.profile_picture} className="w-full h-full object-cover" />
                 ) : (
@@ -189,63 +203,65 @@ function Layout({ children }) {
                 )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-white truncate">{user?.first_name} {user?.last_name}</p>
+              <p className="text-sm font-medium text-white truncate">{user?.first_name} {user?.last_name}</p>
               <p className="text-xs text-slate-400 truncate">{user?.grade_name}</p>
             </div>
           </button>
-          <button onClick={logout} className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 text-red-400 hover:bg-red-500/10 rounded text-sm font-medium transition-colors">
+          <button onClick={logout} className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2.5 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg text-sm font-semibold transition-all">
             <LogOut size={16} /> Déconnexion
           </button>
         </div>
       </aside>
 
       {/* Mobile Header */}
-      <div className="flex-1 flex flex-col lg:ml-60">
-        <header className="lg:hidden bg-white border-b px-4 py-3 flex justify-between items-center sticky top-0 z-20 shadow-sm">
-          <div className="flex items-center gap-2">
-             <Logo size={32} />
-             <span className="font-semibold text-slate-800">MRSA</span>
+      <div className="flex-1 flex flex-col lg:ml-64">
+        <header className="lg:hidden bg-white border-b border-slate-300 px-4 py-3 flex justify-between items-center sticky top-0 z-20 shadow-md">
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-white rounded-lg border border-slate-200 p-1 shadow">
+               <Logo size={32} />
+             </div>
+             <span className="font-bold text-slate-800">MRSA</span>
           </div>
-          <button onClick={() => setMobileMenu(!mobileMenu)} className="p-2 hover:bg-slate-100 rounded"><Menu size={20} /></button>
+          <button onClick={() => setMobileMenu(!mobileMenu)} className="p-2 hover:bg-slate-100 rounded-lg"><Menu size={22} /></button>
         </header>
         
         {mobileMenu && (
           <div className="lg:hidden fixed inset-0 bg-white z-50 p-4">
             <div className="flex justify-between items-center mb-6 pb-4 border-b">
-              <h2 className="text-lg font-semibold">Menu</h2>
-              <button onClick={() => setMobileMenu(false)} className="p-2 hover:bg-slate-100 rounded"><X size={20} /></button>
+              <h2 className="text-lg font-bold">Menu</h2>
+              <button onClick={() => setMobileMenu(false)} className="p-2 hover:bg-slate-100 rounded-lg"><X size={22} /></button>
             </div>
             <nav className="space-y-1">
               {navs.map(n => (
-                <Link key={n.to} to={n.to} onClick={() => setMobileMenu(false)} className="flex items-center gap-3 p-3 rounded text-slate-700 hover:bg-slate-100">
-                  <n.icon size={18} /> {n.label}
+                <Link key={n.to} to={n.to} onClick={() => setMobileMenu(false)} className="flex items-center gap-3 p-3 rounded-lg text-slate-700 hover:bg-slate-100 font-medium">
+                  <n.icon size={20} /> {n.label}
                 </Link>
               ))}
               <div className="border-t my-4" />
-              <button onClick={logout} className="w-full flex items-center gap-3 p-3 text-red-600 font-medium">
-                <LogOut size={18} /> Déconnexion
+              <button onClick={logout} className="w-full flex items-center gap-3 p-3 text-red-600 font-semibold">
+                <LogOut size={20} /> Déconnexion
               </button>
             </nav>
           </div>
         )}
 
-        <main className="flex-1 p-4 lg:p-6">
-          <div className="max-w-7xl mx-auto">{children}</div>
+        <main className="flex-1 p-4 lg:p-6 relative z-10">
+          <div className="max-w-7xl mx-auto animate-in">{children}</div>
         </main>
       </div>
 
       {/* Profile Modal */}
       {showProfileModal && (
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-md shadow-xl">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="font-semibold text-slate-800">Mon Profil</h2>
-              <button onClick={() => setShowProfileModal(false)} className="p-1 hover:bg-slate-100 rounded"><X size={18} /></button>
+          <div className="bg-white rounded-xl w-full max-w-md shadow-2xl animate-in">
+            <div className="flex justify-between items-center p-5 border-b">
+              <h2 className="font-bold text-lg text-slate-800">Mon Profil</h2>
+              <button onClick={() => setShowProfileModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg"><X size={20} /></button>
             </div>
-            <form onSubmit={saveProfile} className="p-4 space-y-4">
+            <form onSubmit={saveProfile} className="p-5 space-y-4">
               <div className="flex justify-center">
                   <div 
-                      className="w-20 h-20 rounded-full bg-slate-200 border-2 border-slate-300 flex items-center justify-center relative overflow-hidden group cursor-pointer"
+                      className="w-24 h-24 rounded-full bg-slate-200 border-4 border-slate-300 flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-lg"
                       onClick={() => fileInputRef.current.click()}
                   >
                       {profileForm.profile_picture ? (
@@ -253,10 +269,10 @@ function Layout({ children }) {
                       ) : user?.profile_picture ? (
                           <img src={user.profile_picture} className="w-full h-full object-cover" />
                       ) : (
-                          <User size={32} className="text-slate-400" />
+                          <User size={40} className="text-slate-400" />
                       )}
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Camera className="text-white" size={20} />
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Camera className="text-white" size={24} />
                       </div>
                   </div>
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={e => setProfileForm({...profileForm, profile_picture: e.target.files[0]})} />
@@ -266,7 +282,7 @@ function Layout({ children }) {
                  <InputField label="Nom" value={profileForm.last_name} onChange={e => setProfileForm({...profileForm, last_name: e.target.value})} required />
               </div>
               <InputField label="Téléphone" value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: e.target.value})} />
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-3">
                 <button type="button" onClick={() => setShowProfileModal(false)} className="btn-secondary flex-1">Annuler</button>
                 <button type="submit" className="btn-primary flex-1">Enregistrer</button>
               </div>
@@ -280,19 +296,20 @@ function Layout({ children }) {
 
 function StatCard({ label, value, icon: Icon, color = "blue" }) {
   const colors = {
-    blue: "text-blue-600 bg-blue-50",
-    green: "text-emerald-600 bg-emerald-50",
-    yellow: "text-amber-600 bg-amber-50",
-    red: "text-red-600 bg-red-50",
+    blue: { icon: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
+    green: { icon: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
+    yellow: { icon: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
+    red: { icon: "text-red-600", bg: "bg-red-50", border: "border-red-200" },
   }
+  const c = colors[color]
   return (
-    <div className="card p-5">
+    <div className={`card p-5 border-l-4 ${c.border}`}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-slate-500 mb-1">{label}</p>
+          <p className="text-sm font-medium text-slate-500 mb-1">{label}</p>
           <p className="stat-value text-slate-800">{value}</p>
         </div>
-        {Icon && <div className={`p-3 rounded-lg ${colors[color]}`}><Icon size={22} strokeWidth={1.75} /></div>}
+        {Icon && <div className={`p-3 rounded-xl ${c.bg}`}><Icon size={24} strokeWidth={1.75} className={c.icon} /></div>}
       </div>
     </div>
   )
@@ -302,8 +319,8 @@ function PageHeader({ title, subtitle, action }) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
       <div>
-        <h1 className="text-xl font-semibold text-slate-800">{title}</h1>
-        {subtitle && <p className="text-slate-500 text-sm mt-0.5">{subtitle}</p>}
+        <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+        {subtitle && <p className="text-slate-500 text-sm mt-1">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -332,12 +349,13 @@ function PublicBooking() {
   }
 
   if(submitted) return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="card p-8 max-w-md w-full text-center">
-        <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle size={32} className="text-emerald-600" />
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <Watermark />
+      <div className="card p-8 max-w-md w-full text-center relative z-10">
+        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg">
+          <CheckCircle size={40} className="text-emerald-600" />
         </div>
-        <h2 className="text-xl font-semibold text-slate-800 mb-2">Demande envoyée</h2>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">Demande envoyée</h2>
         <p className="text-slate-500 mb-6">Votre demande a été transmise. Un membre de l'équipe médicale vous contactera.</p>
         <button onClick={() => navigate('/')} className="btn-secondary w-full">Retour à l'accueil</button>
       </div>
@@ -345,19 +363,20 @@ function PublicBooking() {
   )
 
   return (
-    <div className="min-h-screen p-4 lg:p-8 flex flex-col items-center justify-center">
-      <div className="w-full max-w-lg">
-        <button onClick={() => navigate('/')} className="mb-4 flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm">
+    <div className="min-h-screen p-4 lg:p-8 flex flex-col items-center justify-center relative">
+      <Watermark />
+      <div className="w-full max-w-lg relative z-10">
+        <button onClick={() => navigate('/')} className="mb-4 flex items-center gap-2 text-slate-600 hover:text-slate-800 text-sm font-medium">
           <ArrowLeft size={16} /> Retour
         </button>
         
         <div className="card p-6">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b">
-            <div className="w-12 h-12 bg-white rounded-lg border p-1 flex items-center justify-center">
-              <Logo size={40} />
+          <div className="flex items-center gap-4 mb-6 pb-5 border-b">
+            <div className="w-14 h-14 bg-white rounded-xl border-2 border-slate-200 p-2 flex items-center justify-center shadow">
+              <Logo size={44} />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-slate-800">Demande de rendez-vous</h1>
+              <h1 className="text-xl font-bold text-slate-800">Demande de rendez-vous</h1>
               <p className="text-slate-500 text-sm">Services Médicaux MRSA</p>
             </div>
           </div>
@@ -384,8 +403,8 @@ function PublicBooking() {
             
             <TextArea label="Motif" placeholder="Décrivez brièvement le motif de votre demande..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
 
-            <button type="submit" className="btn-primary w-full py-2.5">
-              <Send size={16} className="mr-2" /> Envoyer la demande
+            <button type="submit" className="btn-primary w-full py-3 text-base">
+              <Send size={18} className="mr-2" /> Envoyer la demande
             </button>
           </form>
         </div>
@@ -456,17 +475,17 @@ function Patients() {
         subtitle="Gestion des dossiers médicaux"
         action={hasPerm('create_patients') && (
           <button onClick={() => { setEditingId(null); setForm(initialForm); setShowModal(true) }} className="btn-primary">
-            <Plus size={16} className="mr-2" /> Nouveau patient
+            <Plus size={18} className="mr-2" /> Nouveau patient
           </button>
         )}
       />
 
       <div className="card">
-        <div className="p-4 border-b">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+        <div className="p-4 border-b bg-slate-50/50 rounded-t-xl">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
-              className="input-field pl-9"
+              className="input-field pl-10"
               placeholder="Rechercher un patient..."
               value={search} onChange={e => setSearch(e.target.value)}
             />
@@ -488,31 +507,31 @@ function Patients() {
                 <tr key={p.id} className="table-row">
                   <td className="table-cell">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
-                          {p.photo ? <img src={p.photo} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400"><User size={18}/></div>}
+                      <div className="w-11 h-11 rounded-full bg-slate-200 overflow-hidden flex-shrink-0 ring-2 ring-slate-300">
+                          {p.photo ? <img src={p.photo} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400"><User size={20}/></div>}
                       </div>
                       <div>
-                          <div className="font-medium text-slate-800">{p.last_name} {p.first_name}</div>
+                          <div className="font-semibold text-slate-800">{p.last_name} {p.first_name}</div>
                           <div className="text-xs text-slate-500">{p.date_of_birth ? new Date(p.date_of_birth).toLocaleDateString('fr-FR') : "Date inconnue"}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="table-cell font-mono text-sm text-blue-600">{p.insurance_number || "—"}</td>
+                  <td className="table-cell font-mono text-sm font-semibold text-blue-600">{p.insurance_number || "—"}</td>
                   <td className="table-cell">
-                    <div className="text-sm text-slate-600">{p.phone || "N/A"}</div>
+                    <div className="text-sm text-slate-700 font-medium">{p.phone || "N/A"}</div>
                     <div className="text-xs text-slate-400">{p.gender === 'M' ? 'Homme' : p.gender === 'F' ? 'Femme' : 'Autre'}</div>
                   </td>
                   <td className="table-cell text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => navigate(`/reports?patient_id=${p.id}`)} title="Voir Rapports" className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded"><Eye size={16} /></button>
-                      {hasPerm('create_patients') && <button onClick={() => handleEdit(p)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded"><Edit2 size={16} /></button>}
-                      {hasPerm('delete_patients') && <button onClick={() => handleDelete(p.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={16} /></button>}
+                      <button onClick={() => navigate(`/reports?patient_id=${p.id}`)} title="Voir Rapports" className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Eye size={18} /></button>
+                      {hasPerm('create_patients') && <button onClick={() => handleEdit(p)} className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"><Edit2 size={18} /></button>}
+                      {hasPerm('delete_patients') && <button onClick={() => handleDelete(p.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>}
                     </div>
                   </td>
                 </tr>
               ))}
               {patients.length === 0 && (
-                <tr><td colSpan="4" className="p-8 text-center text-slate-400">Aucun patient trouvé</td></tr>
+                <tr><td colSpan="4" className="p-10 text-center text-slate-400 font-medium">Aucun patient trouvé</td></tr>
               )}
             </tbody>
           </table>
@@ -521,15 +540,15 @@ function Patients() {
 
       {showModal && (
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-lg shadow-xl">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="font-semibold text-slate-800">{editingId ? "Modifier le patient" : "Nouveau patient"}</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-slate-100 rounded"><X size={18} /></button>
+          <div className="bg-white rounded-xl w-full max-w-lg shadow-2xl animate-in">
+            <div className="p-5 border-b flex justify-between items-center">
+              <h2 className="font-bold text-lg text-slate-800">{editingId ? "Modifier le patient" : "Nouveau patient"}</h2>
+              <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg"><X size={20} /></button>
             </div>
-            <form onSubmit={handleSubmit} className="p-4 space-y-4">
+            <form onSubmit={handleSubmit} className="p-5 space-y-4">
                <div className="flex justify-center">
                   <div 
-                      className="w-20 h-20 rounded-full bg-slate-200 border-2 border-slate-300 flex items-center justify-center relative overflow-hidden group cursor-pointer"
+                      className="w-24 h-24 rounded-full bg-slate-200 border-4 border-slate-300 flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-lg"
                       onClick={() => fileInputRef.current.click()}
                   >
                       {form.photo instanceof File ? (
@@ -537,10 +556,10 @@ function Patients() {
                       ) : form.photo ? (
                           <img src={form.photo} className="w-full h-full object-cover" />
                       ) : (
-                          <User size={32} className="text-slate-400" />
+                          <User size={40} className="text-slate-400" />
                       )}
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Camera className="text-white" size={20} />
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Camera className="text-white" size={24} />
                       </div>
                   </div>
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={e => setForm({...form, photo: e.target.files[0]})} />
@@ -562,7 +581,7 @@ function Patients() {
               <InputField label="Téléphone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
               <TextArea label="Antécédents / Notes" value={form.chronic_conditions} onChange={e => setForm({...form, chronic_conditions: e.target.value})} />
               
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-3">
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1">Annuler</button>
                 <button type="submit" className="btn-primary flex-1">Enregistrer</button>
               </div>
@@ -622,14 +641,14 @@ function Appointments() {
     <Layout>
       <PageHeader title="Rendez-vous" subtitle="Planning des consultations" />
 
-      <div className="flex gap-1 mb-4 card p-1 w-fit">
+      <div className="flex gap-1 mb-5 card p-1.5 w-fit">
         {[
           { id: "all", label: "Tous" },
           { id: "pending", label: "En attente" },
           { id: "my", label: "Mes RDV" }
         ].map(f => (
           <button key={f.id} onClick={() => setFilter(f.id)} 
-            className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${filter === f.id ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>
+            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${filter === f.id ? "bg-blue-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-100"}`}>
             {f.label}
           </button>
         ))}
@@ -637,46 +656,46 @@ function Appointments() {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map(a => (
-          <div key={a.id} className="card p-4 relative group">
+          <div key={a.id} className="card p-5 relative group hover:shadow-lg transition-shadow">
             {isAdmin && (
-                <button onClick={() => handleDelete(a.id)} className="absolute top-3 right-3 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Trash2 size={14} />
+                <button onClick={() => handleDelete(a.id)} className="absolute top-4 right-4 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
+                    <Trash2 size={16} />
                 </button>
             )}
-            <div className="mb-3">
+            <div className="mb-4">
                  {statusBadge(a.status)}
-                 <h3 className="text-slate-800 font-medium mt-2">{a.patient_name}</h3>
-                 <div className="flex items-center gap-1.5 text-slate-500 text-sm mt-1">
-                    <Phone size={12} /> {a.patient_phone || "N/A"}
+                 <h3 className="text-slate-800 font-bold text-lg mt-2">{a.patient_name}</h3>
+                 <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
+                    <Phone size={14} /> {a.patient_phone || "N/A"}
                  </div>
             </div>
             
-            <div className="bg-slate-50 rounded p-3 text-sm text-slate-600 mb-3 border">
-              <p className="text-xs text-slate-400 uppercase font-medium mb-1">{a.appointment_type}</p>
+            <div className="bg-slate-50 rounded-lg p-4 text-sm text-slate-600 mb-4 border">
+              <p className="text-xs text-slate-400 uppercase font-bold mb-1">{a.appointment_type}</p>
               {a.description || "Pas de description"}
             </div>
 
             {a.assigned_medic_id && (
-               <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
-                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">{a.medic_first_name?.[0]}</div>
+               <div className="flex items-center gap-2 text-sm text-slate-500 mb-4">
+                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">{a.medic_first_name?.[0]}</div>
                   {a.medic_first_name} {a.medic_last_name}
                </div>
             )}
 
-            <div className="flex gap-2 pt-2 border-t">
+            <div className="flex gap-2 pt-3 border-t">
                {a.status === 'pending' && hasPerm('manage_appointments') && (
-                 <button onClick={() => handleStatus(a.id, 'assign')} className="btn-primary flex-1 text-xs py-1.5">Prendre en charge</button>
+                 <button onClick={() => handleStatus(a.id, 'assign')} className="btn-primary flex-1 text-sm">Prendre en charge</button>
                )}
                {a.status === 'assigned' && a.assigned_medic_id === user.id && (
-                 <button onClick={() => handleStatus(a.id, 'complete', 'Terminé')} className="btn-success flex-1 text-xs py-1.5">Terminer</button>
+                 <button onClick={() => handleStatus(a.id, 'complete', 'Terminé')} className="btn-success flex-1 text-sm">Terminer</button>
                )}
                {a.status !== 'completed' && a.status !== 'cancelled' && (
-                 <button onClick={() => handleStatus(a.id, 'cancel')} className="btn-danger flex-1 text-xs py-1.5">Annuler</button>
+                 <button onClick={() => handleStatus(a.id, 'cancel')} className="btn-danger flex-1 text-sm">Annuler</button>
                )}
             </div>
           </div>
         ))}
-        {filtered.length === 0 && <p className="text-slate-400 col-span-3 text-center py-10">Aucun rendez-vous</p>}
+        {filtered.length === 0 && <p className="text-slate-400 col-span-3 text-center py-12 font-medium">Aucun rendez-vous</p>}
       </div>
     </Layout>
   )
@@ -747,56 +766,56 @@ function Reports() {
         subtitle="Historique des interventions"
         action={
           <div className="flex gap-2">
-             {filterPatientId && <button onClick={() => setFilterPatientId("")} className="btn-secondary text-sm">Voir tout</button>}
-             {hasPerm('create_reports') && <button onClick={() => setShowModal(true)} className="btn-primary"><FilePlus size={16} className="mr-2" /> Nouveau rapport</button>}
+             {filterPatientId && <button onClick={() => setFilterPatientId("")} className="btn-secondary">Voir tout</button>}
+             {hasPerm('create_reports') && <button onClick={() => setShowModal(true)} className="btn-primary"><FilePlus size={18} className="mr-2" /> Nouveau rapport</button>}
           </div>
         }
       />
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {reports.map(r => (
-          <div key={r.id} className="card p-4 relative group">
+          <div key={r.id} className="card p-5 relative group hover:shadow-lg transition-shadow">
              {hasPerm('delete_reports') && (
-                <button onClick={() => handleDelete(r.id)} className="absolute top-3 right-3 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Trash2 size={14} />
+                <button onClick={() => handleDelete(r.id)} className="absolute top-4 right-4 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
+                    <Trash2 size={16} />
                 </button>
              )}
-             <div className="flex justify-between items-start mb-3">
+             <div className="flex justify-between items-start mb-4">
                 <div>
-                   <h3 className="text-slate-800 font-medium">{r.patient_last_name} {r.patient_first_name}</h3>
-                   <div className="text-slate-500 text-sm">ID: <span className="font-mono text-blue-600">{r.patient_identity_id}</span> · Dr. {r.medic_first_name} {r.medic_last_name}</div>
+                   <h3 className="text-slate-800 font-bold text-lg">{r.patient_last_name} {r.patient_first_name}</h3>
+                   <div className="text-slate-500 text-sm">ID: <span className="font-mono font-semibold text-blue-600">{r.patient_identity_id}</span> · Dr. {r.medic_first_name} {r.medic_last_name}</div>
                 </div>
                 <div className="text-right">
-                   <div className="text-blue-600 font-medium">{r.diagnosis}</div>
-                   <div className="text-slate-400 text-xs">{new Date(r.incident_date).toLocaleDateString('fr-FR')}</div>
+                   <div className="text-blue-600 font-bold">{r.diagnosis}</div>
+                   <div className="text-slate-400 text-sm">{new Date(r.incident_date).toLocaleDateString('fr-FR')}</div>
                 </div>
              </div>
              
-             <div className="grid md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded border text-sm">
+             <div className="grid md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border">
                 <div>
                    <span className="label">Contexte</span>
                    <p className="text-slate-600">{r.notes || "Non précisé"}</p>
                 </div>
                 <div>
                    <span className="label">Soins & Facture</span>
-                   <p className="text-slate-800 mb-1">{r.medications_given || "Aucun"}</p>
-                   <p className="text-emerald-600 font-semibold font-mono">{r.treatment}</p>
+                   <p className="text-slate-800 font-medium mb-1">{r.medications_given || "Aucun"}</p>
+                   <p className="text-emerald-600 font-bold font-mono text-lg">{r.treatment}</p>
                 </div>
              </div>
           </div>
         ))}
-        {reports.length === 0 && <p className="text-center text-slate-400 py-10">Aucun rapport</p>}
+        {reports.length === 0 && <p className="text-center text-slate-400 py-12 font-medium">Aucun rapport</p>}
       </div>
 
       {showModal && (
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-4xl shadow-xl max-h-[90vh] flex flex-col">
-            <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
-              <h2 className="font-semibold text-slate-800">Nouveau rapport</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-slate-100 rounded"><X size={18} /></button>
+          <div className="bg-white rounded-xl w-full max-w-4xl shadow-2xl max-h-[90vh] flex flex-col animate-in">
+            <div className="p-5 border-b flex justify-between items-center flex-shrink-0">
+              <h2 className="font-bold text-lg text-slate-800">Nouveau rapport</h2>
+              <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg"><X size={20} /></button>
             </div>
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-              <div className="p-4 grid lg:grid-cols-2 gap-6">
+              <div className="p-5 grid lg:grid-cols-2 gap-6">
                 <div className="space-y-4">
                    <SelectField label="Patient" value={form.patient_id} onChange={e => setForm({...form, patient_id: e.target.value})} required>
                       <option value="">-- Sélectionner --</option>
@@ -809,21 +828,21 @@ function Reports() {
                    <TextArea label="Contexte / Notes" placeholder="Circonstances, observations..." value={form.context_notes} onChange={e => setForm({...form, context_notes: e.target.value})} />
                 </div>
 
-                <div className="bg-slate-50 rounded-lg p-4 border">
-                   <div className="flex justify-between items-center mb-3 pb-3 border-b">
+                <div className="bg-slate-50 rounded-xl p-5 border">
+                   <div className="flex justify-between items-center mb-4 pb-4 border-b">
                       <span className="label mb-0">Soins & Services</span>
-                      <span className="text-emerald-600 font-bold font-mono text-lg">{form.total_cost} €</span>
+                      <span className="text-emerald-600 font-bold font-mono text-xl">{form.total_cost} €</span>
                    </div>
-                   <div className="space-y-4 max-h-[300px] overflow-y-auto">
+                   <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
                       {servicesList.map(cat => (
                          <div key={cat.cat}>
-                            <h4 className="text-slate-500 text-xs font-semibold uppercase mb-2">{cat.cat}</h4>
+                            <h4 className="text-slate-500 text-xs font-bold uppercase mb-2">{cat.cat}</h4>
                             <div className="grid grid-cols-2 gap-2">
                                {cat.items.map(item => (
                                   <div key={item.n} onClick={() => toggleService(item)} 
-                                     className={`p-2 rounded cursor-pointer border text-sm flex justify-between items-center transition-colors ${form.medications.includes(item.n) ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"}`}>
+                                     className={`p-3 rounded-lg cursor-pointer border-2 text-sm flex justify-between items-center transition-all ${form.medications.includes(item.n) ? "bg-blue-50 border-blue-400 text-blue-700 font-medium" : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"}`}>
                                      <span className="truncate">{item.n}</span>
-                                     <span className="font-mono text-xs">{item.p}€</span>
+                                     <span className="font-mono text-xs font-bold">{item.p}€</span>
                                   </div>
                                ))}
                             </div>
@@ -832,7 +851,7 @@ function Reports() {
                    </div>
                 </div>
               </div>
-              <div className="p-4 border-t flex gap-3 flex-shrink-0">
+              <div className="p-5 border-t flex gap-3 flex-shrink-0 bg-slate-50">
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1">Annuler</button>
                 <button type="submit" className="btn-primary flex-1">Enregistrer ({form.total_cost}€)</button>
               </div>
@@ -910,7 +929,7 @@ function Admin() {
       <div className="card mb-6">
         <div className="flex border-b">
           {["users", "grades", "stats"].map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)} className={`px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === tab ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
+            <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 py-4 text-sm font-bold border-b-2 -mb-px transition-all ${activeTab === tab ? "border-blue-600 text-blue-600 bg-blue-50/50" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50"}`}>
               {tab === "users" ? "Utilisateurs" : tab === "grades" ? "Grades" : "Statistiques"}
             </button>
           ))}
@@ -919,8 +938,8 @@ function Admin() {
 
       {activeTab === "users" && (
         <div className="card">
-          <div className="p-4 border-b flex justify-end">
-             <button onClick={newUser} className="btn-primary"><UserPlus size={16} className="mr-2" /> Créer</button>
+          <div className="p-4 border-b bg-slate-50/50 flex justify-end rounded-t-xl">
+             <button onClick={newUser} className="btn-primary"><UserPlus size={18} className="mr-2" /> Créer</button>
           </div>
           <table className="w-full">
             <thead><tr><th className="table-header">Utilisateur</th><th className="table-header">Badge</th><th className="table-header">Grade</th><th className="table-header">Actions</th></tr></thead>
@@ -928,16 +947,16 @@ function Admin() {
                {usersList.map(u => (
                  <tr key={u.id} className="table-row">
                    <td className="table-cell">
-                      <div className="font-medium text-slate-800">{u.first_name} {u.last_name}</div>
+                      <div className="font-semibold text-slate-800">{u.first_name} {u.last_name}</div>
                       <div className="text-xs text-slate-400 font-mono">@{u.username}</div>
                    </td>
-                   <td className="table-cell text-slate-500 font-mono text-sm">{u.badge_number}</td>
-                   <td className="table-cell"><span className="badge" style={{ backgroundColor: u.grade_color + '20', color: u.grade_color }}>{u.grade_name || "—"}</span></td>
+                   <td className="table-cell text-slate-600 font-mono text-sm font-semibold">{u.badge_number}</td>
+                   <td className="table-cell"><span className="badge" style={{ backgroundColor: u.grade_color + '25', color: u.grade_color, borderColor: u.grade_color }}>{u.grade_name || "—"}</span></td>
                    <td className="table-cell">
                      <div className="flex items-center gap-1">
-                       <button onClick={() => editUser(u)} className="p-2 hover:bg-slate-100 rounded text-slate-500"><Edit2 size={14}/></button>
+                       <button onClick={() => editUser(u)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition-colors"><Edit2 size={16}/></button>
                        {hasPerm('delete_users') && u.id !== user.id && (
-                           <button onClick={() => deleteUser(u.id)} className="p-2 hover:bg-red-50 text-slate-500 hover:text-red-500 rounded"><Trash2 size={14}/></button>
+                           <button onClick={() => deleteUser(u.id)} className="p-2 hover:bg-red-50 text-slate-500 hover:text-red-500 rounded-lg transition-colors"><Trash2 size={16}/></button>
                        )}
                      </div>
                    </td>
@@ -951,20 +970,20 @@ function Admin() {
       {activeTab === "grades" && (
         <div className="space-y-4">
           {grades.map(g => (
-            <div key={g.id} className="card p-4">
-              <div className="flex items-center gap-3 mb-4 pb-4 border-b">
-                 <div className="w-4 h-4 rounded-full" style={{ backgroundColor: g.color }} />
+            <div key={g.id} className="card p-5">
+              <div className="flex items-center gap-4 mb-5 pb-5 border-b">
+                 <div className="w-5 h-5 rounded-full shadow-inner" style={{ backgroundColor: g.color }} />
                  <div>
-                   <h3 className="font-semibold text-slate-800">{g.name}</h3>
+                   <h3 className="font-bold text-lg text-slate-800">{g.name}</h3>
                    <p className="text-slate-500 text-sm">{g.category} · Niveau {g.level}</p>
                  </div>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {permissionsList.map(p => (
-                  <label key={p.key} className="flex items-center gap-2 cursor-pointer group">
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${g.permissions?.[p.key] ? 'bg-blue-600 border-blue-600' : 'border-slate-300 group-hover:border-slate-400'}`}>{g.permissions?.[p.key] && <Check size={12} className="text-white" />}</div>
+                  <label key={p.key} className="flex items-center gap-2.5 cursor-pointer group p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${g.permissions?.[p.key] ? 'bg-blue-600 border-blue-600' : 'border-slate-300 group-hover:border-slate-400'}`}>{g.permissions?.[p.key] && <Check size={14} className="text-white" strokeWidth={3} />}</div>
                     <input type="checkbox" className="hidden" checked={!!g.permissions?.[p.key]} onChange={() => togglePermission(g, p.key)} />
-                    <span className={`text-sm ${g.permissions?.[p.key] ? 'text-slate-800' : 'text-slate-500'}`}>{p.label}</span>
+                    <span className={`text-sm font-medium ${g.permissions?.[p.key] ? 'text-slate-800' : 'text-slate-500'}`}>{p.label}</span>
                   </label>
                 ))}
               </div>
@@ -983,18 +1002,18 @@ function Admin() {
                     <StatCard label="Effectif" value={stats.users?.total || 0} icon={Activity} color="blue" />
                 </>
             ) : (
-                <div className="col-span-4 text-center text-slate-400 py-10">Chargement...</div>
+                <div className="col-span-4 text-center text-slate-400 py-12 font-medium">Chargement...</div>
             )}
          </div>
       )}
 
       {showUserModal && (
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
-           <div className="bg-white rounded-lg w-full max-w-lg shadow-xl">
-              <div className="p-4 border-b">
-                <h2 className="font-semibold text-slate-800">{userForm.id ? "Modifier" : "Créer"} utilisateur</h2>
+           <div className="bg-white rounded-xl w-full max-w-lg shadow-2xl animate-in">
+              <div className="p-5 border-b">
+                <h2 className="font-bold text-lg text-slate-800">{userForm.id ? "Modifier" : "Créer"} utilisateur</h2>
               </div>
-              <form onSubmit={handleUserSubmit} className="p-4 space-y-4">
+              <form onSubmit={handleUserSubmit} className="p-5 space-y-4">
                  <div className="grid grid-cols-2 gap-3">
                     <InputField label="Prénom" value={userForm.first_name} onChange={e => setUserForm({...userForm, first_name: e.target.value})} required />
                     <InputField label="Nom" value={userForm.last_name} onChange={e => setUserForm({...userForm, last_name: e.target.value})} required />
@@ -1008,7 +1027,7 @@ function Admin() {
                     <option value="">-- Sélectionner --</option>
                     {grades.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                  </SelectField>
-                 <div className="flex gap-3 pt-2">
+                 <div className="flex gap-3 pt-3">
                     <button type="button" onClick={() => setShowUserModal(false)} className="btn-secondary flex-1">Annuler</button>
                     <button type="submit" className="btn-primary flex-1">Enregistrer</button>
                  </div>
@@ -1048,8 +1067,8 @@ function Diagnosis() {
     <Layout>
       <PageHeader title="Outil de Diagnostic" subtitle="Aide au diagnostic médical" />
       <div className="grid lg:grid-cols-2 gap-6 items-start">
-        <div className="card p-5">
-          <form onSubmit={handleAnalyze} className="space-y-4">
+        <div className="card p-6">
+          <form onSubmit={handleAnalyze} className="space-y-5">
             <SelectField label="Symptôme principal" value={selectedSymptom} onChange={e => setSelectedSymptom(e.target.value)} required>
               <option value="">-- Sélectionner --</option>
               {symptoms.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1065,50 +1084,50 @@ function Diagnosis() {
               </div>
             </div>
             
-            <button type="submit" disabled={loading} className="btn-primary w-full py-2.5">
-              {loading ? "Analyse..." : "Analyser"}
+            <button type="submit" disabled={loading} className="btn-primary w-full py-3 text-base">
+              {loading ? "Analyse en cours..." : "Analyser"}
             </button>
           </form>
         </div>
 
         <div>
           {result && result.status !== "unknown" ? (
-             <div className={`card p-5 ${result.status === 'confirmed' ? 'border-emerald-300' : 'border-amber-300'}`}>
-                <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-                  <div className={`w-3 h-3 rounded-full ${result.status === 'confirmed' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                  <h2 className="font-semibold text-slate-800">
+             <div className={`card p-6 border-l-4 ${result.status === 'confirmed' ? 'border-emerald-500' : 'border-amber-500'}`}>
+                <div className="flex items-center gap-3 mb-5 pb-5 border-b">
+                  <div className={`w-4 h-4 rounded-full ${result.status === 'confirmed' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                  <h2 className="font-bold text-lg text-slate-800">
                       {result.status === 'confirmed' ? "Diagnostic confirmé" : "Diagnostics possibles"}
                   </h2>
                 </div>
-                <p className="text-slate-600 mb-4 text-sm">{result.message}</p>
+                <p className="text-slate-600 mb-5">{result.message}</p>
                 
-                <div className="space-y-2 max-h-[350px] overflow-y-auto">
+                <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
                    {result.results.map((r, i) => (
-                      <div key={i} className="bg-slate-50 p-4 rounded border">
-                         <div className="flex justify-between items-center mb-2">
-                            <span className="font-medium text-slate-800">{r.name}</span>
+                      <div key={i} className="bg-slate-50 p-4 rounded-xl border">
+                         <div className="flex justify-between items-center mb-3">
+                            <span className="font-bold text-slate-800 text-lg">{r.name}</span>
                             <span className={`badge ${r.confidence > 80 ? 'badge-green' : 'badge-yellow'}`}>{r.confidence}%</span>
                          </div>
-                         <div className="grid grid-cols-2 gap-2 text-sm pt-2 border-t">
-                            <div><span className="text-slate-400 text-xs">Traitement</span><p className="text-blue-600 font-medium">{r.med}</p></div>
-                            <div><span className="text-slate-400 text-xs">Organe cible</span><p className="text-slate-600">{r.organ}</p></div>
+                         <div className="grid grid-cols-2 gap-3 text-sm pt-3 border-t">
+                            <div><span className="text-slate-400 text-xs font-bold uppercase">Traitement</span><p className="text-blue-600 font-semibold mt-1">{r.med}</p></div>
+                            <div><span className="text-slate-400 text-xs font-bold uppercase">Organe cible</span><p className="text-slate-700 font-medium mt-1">{r.organ}</p></div>
                          </div>
                       </div>
                    ))}
                 </div>
-                <button onClick={reset} className="btn-secondary w-full mt-4">Nouveau diagnostic</button>
+                <button onClick={reset} className="btn-secondary w-full mt-5">Nouveau diagnostic</button>
              </div>
           ) : result ? (
-            <div className="card p-8 text-center">
-               <HelpCircle size={40} className="mx-auto text-slate-300 mb-3" />
-               <h3 className="font-semibold text-slate-800">Aucun résultat</h3>
-               <p className="text-slate-500 mt-2 mb-4 text-sm">Les constantes ne correspondent à aucune pathologie connue.</p>
-               <button onClick={reset} className="text-blue-600 hover:text-blue-700 font-medium text-sm">Réessayer</button>
+            <div className="card p-10 text-center">
+               <HelpCircle size={48} className="mx-auto text-slate-300 mb-4" />
+               <h3 className="font-bold text-xl text-slate-800">Aucun résultat</h3>
+               <p className="text-slate-500 mt-2 mb-6">Les constantes ne correspondent à aucune pathologie connue.</p>
+               <button onClick={reset} className="text-blue-600 hover:text-blue-700 font-semibold">Réessayer</button>
             </div>
           ) : (
-            <div className="card border-dashed border-2 border-slate-300 bg-slate-50 p-12 text-center text-slate-400 flex flex-col items-center">
-               <Stethoscope className="mb-3 opacity-40" size={32} />
-               <span className="text-sm">Renseignez les constantes vitales</span>
+            <div className="card border-dashed border-2 border-slate-300 bg-slate-50 p-14 text-center text-slate-400 flex flex-col items-center">
+               <Stethoscope className="mb-4 opacity-40" size={40} />
+               <span className="font-medium">Renseignez les constantes vitales</span>
             </div>
           )}
         </div>
@@ -1129,34 +1148,34 @@ function Dashboard() {
     <Layout>
       <PageHeader title={`Bonjour, ${user?.first_name || user?.username}`} subtitle={`${user?.grade_name || "Personnel médical"} · Badge ${user?.badge_number || "N/A"}`} />
       
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Patients" value={stats?.patients?.total ?? "—"} icon={Users} color="blue" />
         <StatCard label="Rapports" value={stats?.reports?.total ?? "—"} icon={FileText} color="green" />
         <StatCard label="RDV en attente" value={stats?.appointments?.pending ?? "—"} icon={Clock} color="yellow" />
         <StatCard label="Effectif" value={stats?.users?.total ?? "—"} icon={Activity} color="blue" />
       </div>
 
-      <h2 className="font-semibold text-slate-800 mb-4">Accès rapide</h2>
+      <h2 className="font-bold text-lg text-slate-800 mb-4">Accès rapide</h2>
       <div className="grid md:grid-cols-3 gap-4">
-        <Link to="/diagnosis" className="card p-5 hover:shadow-md transition-shadow group">
-          <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 mb-3">
-            <Stethoscope size={20} />
+        <Link to="/diagnosis" className="card p-6 hover:shadow-xl transition-all group border-l-4 border-blue-500">
+          <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-4 group-hover:scale-110 transition-transform">
+            <Stethoscope size={24} />
           </div>
-          <h3 className="font-medium text-slate-800 mb-0.5 flex items-center gap-2">Diagnostic <ChevronRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" /></h3>
+          <h3 className="font-bold text-slate-800 mb-1 flex items-center gap-2">Diagnostic <ChevronRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-500" /></h3>
           <p className="text-slate-500 text-sm">Outil d'aide au diagnostic</p>
         </Link>
-        <Link to="/patients" className="card p-5 hover:shadow-md transition-shadow group">
-          <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 mb-3">
-            <Users size={20} />
+        <Link to="/patients" className="card p-6 hover:shadow-xl transition-all group border-l-4 border-slate-400">
+          <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 mb-4 group-hover:scale-110 transition-transform">
+            <Users size={24} />
           </div>
-          <h3 className="font-medium text-slate-800 mb-0.5 flex items-center gap-2">Patients <ChevronRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" /></h3>
+          <h3 className="font-bold text-slate-800 mb-1 flex items-center gap-2">Patients <ChevronRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-500" /></h3>
           <p className="text-slate-500 text-sm">Gestion des dossiers</p>
         </Link>
-        <Link to="/reports" className="card p-5 hover:shadow-md transition-shadow group">
-          <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 mb-3">
-            <FilePlus size={20} />
+        <Link to="/reports" className="card p-6 hover:shadow-xl transition-all group border-l-4 border-emerald-500">
+          <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-4 group-hover:scale-110 transition-transform">
+            <FilePlus size={24} />
           </div>
-          <h3 className="font-medium text-slate-800 mb-0.5 flex items-center gap-2">Rapports <ChevronRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" /></h3>
+          <h3 className="font-bold text-slate-800 mb-1 flex items-center gap-2">Rapports <ChevronRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity text-emerald-500" /></h3>
           <p className="text-slate-500 text-sm">Interventions médicales</p>
         </Link>
       </div>
@@ -1170,18 +1189,18 @@ function Roster() {
   return (
     <Layout>
       <PageHeader title="Effectifs" subtitle="Personnel en service" />
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {members.map(m => (
-          <div key={m.id} className="card p-4 flex items-center gap-3">
-             <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-medium text-sm overflow-hidden">
+          <div key={m.id} className="card p-5 flex items-center gap-4 hover:shadow-lg transition-shadow">
+             <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm overflow-hidden ring-2 ring-slate-300">
                 {m.profile_picture ? <img src={m.profile_picture} className="w-full h-full object-cover" /> : m.username?.[0].toUpperCase()}
              </div>
              <div className="flex-1 min-w-0">
-                <h4 className="text-slate-800 font-medium truncate">{m.first_name || m.username} {m.last_name}</h4>
-                <div className="text-xs font-medium" style={{ color: m.grade_color }}>{m.grade_name}</div>
+                <h4 className="text-slate-800 font-semibold truncate">{m.first_name || m.username} {m.last_name}</h4>
+                <div className="text-sm font-bold" style={{ color: m.grade_color }}>{m.grade_name}</div>
              </div>
              <div className="text-right flex-shrink-0">
-                <div className="text-slate-400 font-mono text-xs">{m.badge_number}</div>
+                <div className="text-slate-500 font-mono text-xs font-semibold">{m.badge_number}</div>
                 <div className="text-slate-400 text-xs">{m.phone || "—"}</div>
              </div>
           </div>
@@ -1194,21 +1213,22 @@ function Roster() {
 function Landing() {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-       <div className="text-center space-y-6">
-          <div className="w-24 h-24 bg-white rounded-2xl border-2 border-slate-200 flex items-center justify-center mx-auto shadow-lg p-2">
-            <Logo size={80} />
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+      <Watermark />
+      <div className="text-center space-y-8 relative z-10">
+          <div className="w-28 h-28 bg-white rounded-3xl border-2 border-slate-200 flex items-center justify-center mx-auto shadow-2xl p-3">
+            <Logo size={88} />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-800">MRSA</h1>
-            <p className="text-slate-500 mt-1">Système de Gestion Médicale</p>
+            <h1 className="text-4xl font-black text-slate-800">MRSA</h1>
+            <p className="text-slate-500 mt-2 text-lg">Système de Gestion Médicale</p>
           </div>
-          <div className="flex gap-3 justify-center pt-2">
-            <Link to="/login" className="btn-primary px-6 py-2.5">Connexion Personnel</Link>
-            <button onClick={() => navigate('/book')} className="btn-secondary px-6 py-2.5">Prendre RDV</button>
+          <div className="flex gap-4 justify-center pt-2">
+            <Link to="/login" className="btn-primary px-8 py-3 text-base">Connexion Personnel</Link>
+            <button onClick={() => navigate('/book')} className="btn-secondary px-8 py-3 text-base">Prendre RDV</button>
           </div>
        </div>
-       <p className="absolute bottom-6 text-slate-400 text-xs">© 2024 MRSA · Tous droits réservés</p>
+       <p className="absolute bottom-6 text-slate-400 text-sm font-medium">© 2024 MRSA · Tous droits réservés</p>
     </div>
   )
 }
@@ -1227,27 +1247,28 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-       <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <Watermark />
+       <div className="w-full max-w-sm relative z-10">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-white rounded-xl border flex items-center justify-center mx-auto mb-4 shadow p-2">
-              <Logo size={48} />
+            <div className="w-20 h-20 bg-white rounded-2xl border-2 border-slate-200 flex items-center justify-center mx-auto mb-5 shadow-xl p-3">
+              <Logo size={56} />
             </div>
-            <h1 className="text-xl font-semibold text-slate-800">Connexion</h1>
-            <p className="text-slate-500 text-sm mt-1">Système de Gestion Médicale MRSA</p>
+            <h1 className="text-2xl font-bold text-slate-800">Connexion</h1>
+            <p className="text-slate-500 mt-1">Système de Gestion Médicale MRSA</p>
           </div>
           
-          <div className="card p-5">
-            {error && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded mb-4 text-sm text-center">{error}</div>}
+          <div className="card p-6">
+            {error && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-4 text-sm text-center font-medium">{error}</div>}
             <form onSubmit={handleSubmit} className="space-y-4">
                <InputField label="Identifiant" placeholder="nom.prenom" value={form.username} onChange={e => setForm({...form, username: e.target.value})} />
                <InputField label="Mot de passe" type="password" placeholder="••••••••" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
-               <button type="submit" className="btn-primary w-full py-2.5">Se connecter</button>
+               <button type="submit" className="btn-primary w-full py-3 text-base">Se connecter</button>
             </form>
           </div>
           
-          <p className="text-center text-slate-400 text-xs mt-6">
-            <Link to="/" className="hover:text-slate-600">← Retour à l'accueil</Link>
+          <p className="text-center text-slate-400 text-sm mt-6 font-medium">
+            <Link to="/" className="hover:text-slate-600 transition-colors">← Retour à l'accueil</Link>
           </p>
        </div>
     </div>
@@ -1278,7 +1299,15 @@ export default function App() {
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-500 text-sm">Chargement...</div>
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center relative">
+      <Watermark />
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-slate-500 font-medium">Chargement...</p>
+      </div>
+    </div>
+  )
   if (!user) return <Navigate to="/login" />
   return children
 }
