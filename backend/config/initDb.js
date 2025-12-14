@@ -1,5 +1,4 @@
 const pool = require("./database");
-const bcrypt = require("bcrypt");
 
 const initDatabase = async () => {
   const client = await pool.connect();
@@ -159,26 +158,6 @@ const initDatabase = async () => {
     if (devGradeCheck.rows.length === 0) {
       const allPerms = JSON.stringify({ access_dashboard: true, view_patients: true, create_patients: true, delete_patients: true, create_reports: true, delete_reports: true, manage_appointments: true, delete_appointments: true, view_roster: true, manage_users: true, delete_users: true, manage_grades: true, view_logs: true });
       await client.query(`INSERT INTO grades (name, category, level, color, permissions) VALUES ('Développeur', 'Système', 99, '#8b5cf6', '${allPerms}')`);
-    }
-
-    // 4. CRÉATION COMPTE ADMIN PAR DÉFAUT
-    const adminCheck = await client.query("SELECT id FROM users WHERE username = 'admin'");
-    if (adminCheck.rows.length === 0) {
-      console.log("🔐 Création du compte admin par défaut...");
-      
-      // Récupérer le grade Développeur (niveau 99) pour l'admin
-      const devGrade = await client.query("SELECT id FROM grades WHERE level = 99");
-      const gradeId = devGrade.rows.length > 0 ? devGrade.rows[0].id : null;
-      
-      // Hash du mot de passe "1234"
-      const hashedPassword = await bcrypt.hash("1234", 10);
-      
-      await client.query(`
-        INSERT INTO users (username, password, first_name, last_name, badge_number, grade_id, is_admin, is_active)
-        VALUES ($1, $2, $3, $4, $5, $6, TRUE, TRUE)
-      `, ['admin', hashedPassword, 'Admin', 'Système', 'ADMIN-001', gradeId]);
-      
-      console.log("✅ Compte admin créé (ID: admin / MDP: 1234)");
     }
 
     // Spécialités
