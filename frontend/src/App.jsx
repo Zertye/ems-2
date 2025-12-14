@@ -3,8 +3,8 @@ import { createContext, useContext, useState, useEffect, useRef } from "react"
 import { 
   Activity, Users, ClipboardList, Stethoscope, ShieldAlert, 
   LogOut, LayoutDashboard, FileText, Menu, X, 
-  AlertTriangle, CheckCircle, HelpCircle,
-  Search, Plus, Calendar, Clock, Edit2, Trash2, Check, Phone, User, FilePlus, ArrowLeft, Send, UserPlus, Eye, Camera, ChevronRight, Building2, Heart
+  CheckCircle, HelpCircle,
+  Search, Plus, Clock, Edit2, Trash2, Check, Phone, User, FilePlus, ArrowLeft, Send, UserPlus, Eye, Camera, ChevronRight
 } from "lucide-react"
 
 // --- Auth Context ---
@@ -89,6 +89,17 @@ const TextArea = ({ label, className, ...props }) => (
   </div>
 )
 
+// Logo Component
+const Logo = ({ size = 40, className = "" }) => (
+  <img 
+    src="/logo.png" 
+    alt="MRSA Logo" 
+    className={`object-contain ${className}`}
+    style={{ width: size, height: size }}
+    onError={(e) => { e.target.style.display = 'none' }}
+  />
+)
+
 // --- Layout ---
 function SidebarItem({ icon: Icon, label, to, active }) {
   return (
@@ -143,13 +154,13 @@ function Layout({ children }) {
   if (isAdmin || user?.grade_permissions?.manage_users) navs.push({ icon: ShieldAlert, label: "Administration", to: "/admin" })
 
   return (
-    <div className="min-h-screen bg-slate-100 flex">
+    <div className="min-h-screen flex">
       {/* Sidebar */}
       <aside className="hidden lg:flex flex-col w-60 bg-sidebar fixed h-full z-30">
-        <div className="p-4 border-b border-slate-700">
+        <div className="p-4 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-primary-600 rounded-lg flex items-center justify-center">
-              <Heart size={20} className="text-white" fill="white" />
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1">
+              <Logo size={32} />
             </div>
             <div>
               <h1 className="text-white font-semibold text-sm">MRSA</h1>
@@ -159,13 +170,13 @@ function Layout({ children }) {
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          <p className="section-title mt-2">Menu principal</p>
+          <p className="section-title mt-2">Navigation</p>
           {navs.map(n => <SidebarItem key={n.to} {...n} active={location.pathname === n.to} />)}
         </nav>
 
-        <div className="p-3 border-t border-slate-700">
+        <div className="p-3 border-t border-slate-700/50">
           <button onClick={openProfile} className="w-full flex items-center gap-3 p-2 rounded hover:bg-sidebar-hover transition-colors text-left">
-            <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
+            <div className="w-9 h-9 rounded-full bg-slate-600 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
                 {user?.profile_picture ? (
                     <img src={user.profile_picture} className="w-full h-full object-cover" />
                 ) : (
@@ -185,9 +196,9 @@ function Layout({ children }) {
 
       {/* Mobile Header */}
       <div className="flex-1 flex flex-col lg:ml-60">
-        <header className="lg:hidden bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center sticky top-0 z-20">
+        <header className="lg:hidden bg-white border-b px-4 py-3 flex justify-between items-center sticky top-0 z-20 shadow-sm">
           <div className="flex items-center gap-2">
-             <Heart size={24} className="text-primary-600" fill="currentColor" />
+             <Logo size={32} />
              <span className="font-semibold text-slate-800">MRSA</span>
           </div>
           <button onClick={() => setMobileMenu(!mobileMenu)} className="p-2 hover:bg-slate-100 rounded"><Menu size={20} /></button>
@@ -264,7 +275,7 @@ function Layout({ children }) {
 
 function StatCard({ label, value, icon: Icon, color = "blue" }) {
   const colors = {
-    blue: "text-primary-600 bg-primary-50",
+    blue: "text-blue-600 bg-blue-50",
     green: "text-emerald-600 bg-emerald-50",
     yellow: "text-amber-600 bg-amber-50",
     red: "text-red-600 bg-red-50",
@@ -316,8 +327,8 @@ function PublicBooking() {
   }
 
   if(submitted) return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg p-8 max-w-md w-full text-center shadow-sm border">
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="card p-8 max-w-md w-full text-center">
         <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle size={32} className="text-emerald-600" />
         </div>
@@ -329,7 +340,7 @@ function PublicBooking() {
   )
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4 lg:p-8 flex flex-col items-center justify-center">
+    <div className="min-h-screen p-4 lg:p-8 flex flex-col items-center justify-center">
       <div className="w-full max-w-lg">
         <button onClick={() => navigate('/')} className="mb-4 flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm">
           <ArrowLeft size={16} /> Retour
@@ -337,8 +348,8 @@ function PublicBooking() {
         
         <div className="card p-6">
           <div className="flex items-center gap-3 mb-6 pb-4 border-b">
-            <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-              <Heart size={22} className="text-white" fill="white" />
+            <div className="w-12 h-12 bg-white rounded-lg border p-1 flex items-center justify-center">
+              <Logo size={40} />
             </div>
             <div>
               <h1 className="text-lg font-semibold text-slate-800">Demande de rendez-vous</h1>
@@ -472,8 +483,8 @@ function Patients() {
                 <tr key={p.id} className="table-row">
                   <td className="table-cell">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
-                          {p.photo ? <img src={p.photo} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400"><User size={16}/></div>}
+                      <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
+                          {p.photo ? <img src={p.photo} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400"><User size={18}/></div>}
                       </div>
                       <div>
                           <div className="font-medium text-slate-800">{p.last_name} {p.first_name}</div>
@@ -481,7 +492,7 @@ function Patients() {
                       </div>
                     </div>
                   </td>
-                  <td className="table-cell font-mono text-sm text-primary-600">{p.insurance_number || "—"}</td>
+                  <td className="table-cell font-mono text-sm text-blue-600">{p.insurance_number || "—"}</td>
                   <td className="table-cell">
                     <div className="text-sm text-slate-600">{p.phone || "N/A"}</div>
                     <div className="text-xs text-slate-400">{p.gender === 'M' ? 'Homme' : p.gender === 'F' ? 'Femme' : 'Autre'}</div>
@@ -606,14 +617,14 @@ function Appointments() {
     <Layout>
       <PageHeader title="Rendez-vous" subtitle="Planning des consultations" />
 
-      <div className="flex gap-1 mb-4 bg-white p-1 rounded border w-fit">
+      <div className="flex gap-1 mb-4 card p-1 w-fit">
         {[
           { id: "all", label: "Tous" },
           { id: "pending", label: "En attente" },
           { id: "my", label: "Mes RDV" }
         ].map(f => (
           <button key={f.id} onClick={() => setFilter(f.id)} 
-            className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${filter === f.id ? "bg-primary-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>
+            className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${filter === f.id ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>
             {f.label}
           </button>
         ))}
@@ -635,14 +646,14 @@ function Appointments() {
                  </div>
             </div>
             
-            <div className="bg-slate-50 rounded p-3 text-sm text-slate-600 mb-3">
+            <div className="bg-slate-50 rounded p-3 text-sm text-slate-600 mb-3 border">
               <p className="text-xs text-slate-400 uppercase font-medium mb-1">{a.appointment_type}</p>
               {a.description || "Pas de description"}
             </div>
 
             {a.assigned_medic_id && (
                <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
-                  <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-medium">{a.medic_first_name?.[0]}</div>
+                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">{a.medic_first_name?.[0]}</div>
                   {a.medic_first_name} {a.medic_last_name}
                </div>
             )}
@@ -748,15 +759,15 @@ function Reports() {
              <div className="flex justify-between items-start mb-3">
                 <div>
                    <h3 className="text-slate-800 font-medium">{r.patient_last_name} {r.patient_first_name}</h3>
-                   <div className="text-slate-500 text-sm">ID: <span className="font-mono text-primary-600">{r.patient_identity_id}</span> · Dr. {r.medic_first_name} {r.medic_last_name}</div>
+                   <div className="text-slate-500 text-sm">ID: <span className="font-mono text-blue-600">{r.patient_identity_id}</span> · Dr. {r.medic_first_name} {r.medic_last_name}</div>
                 </div>
                 <div className="text-right">
-                   <div className="text-primary-600 font-medium">{r.diagnosis}</div>
+                   <div className="text-blue-600 font-medium">{r.diagnosis}</div>
                    <div className="text-slate-400 text-xs">{new Date(r.incident_date).toLocaleDateString('fr-FR')}</div>
                 </div>
              </div>
              
-             <div className="grid md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded text-sm">
+             <div className="grid md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded border text-sm">
                 <div>
                    <span className="label">Contexte</span>
                    <p className="text-slate-600">{r.notes || "Non précisé"}</p>
@@ -764,7 +775,7 @@ function Reports() {
                 <div>
                    <span className="label">Soins & Facture</span>
                    <p className="text-slate-800 mb-1">{r.medications_given || "Aucun"}</p>
-                   <p className="text-emerald-600 font-medium font-mono">{r.treatment}</p>
+                   <p className="text-emerald-600 font-semibold font-mono">{r.treatment}</p>
                 </div>
              </div>
           </div>
@@ -796,7 +807,7 @@ function Reports() {
                 <div className="bg-slate-50 rounded-lg p-4 border">
                    <div className="flex justify-between items-center mb-3 pb-3 border-b">
                       <span className="label mb-0">Soins & Services</span>
-                      <span className="text-emerald-600 font-semibold font-mono text-lg">{form.total_cost} €</span>
+                      <span className="text-emerald-600 font-bold font-mono text-lg">{form.total_cost} €</span>
                    </div>
                    <div className="space-y-4 max-h-[300px] overflow-y-auto">
                       {servicesList.map(cat => (
@@ -805,7 +816,7 @@ function Reports() {
                             <div className="grid grid-cols-2 gap-2">
                                {cat.items.map(item => (
                                   <div key={item.n} onClick={() => toggleService(item)} 
-                                     className={`p-2 rounded cursor-pointer border text-sm flex justify-between items-center transition-colors ${form.medications.includes(item.n) ? "bg-primary-50 border-primary-300 text-primary-700" : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"}`}>
+                                     className={`p-2 rounded cursor-pointer border text-sm flex justify-between items-center transition-colors ${form.medications.includes(item.n) ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"}`}>
                                      <span className="truncate">{item.n}</span>
                                      <span className="font-mono text-xs">{item.p}€</span>
                                   </div>
@@ -891,12 +902,14 @@ function Admin() {
     <Layout>
       <PageHeader title="Administration" subtitle="Gestion du système" />
       
-      <div className="flex border-b mb-6">
-        {["users", "grades", "stats"].map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === tab ? "border-primary-600 text-primary-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
-            {tab === "users" ? "Utilisateurs" : tab === "grades" ? "Grades" : "Statistiques"}
-          </button>
-        ))}
+      <div className="card mb-6">
+        <div className="flex border-b">
+          {["users", "grades", "stats"].map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)} className={`px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === tab ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
+              {tab === "users" ? "Utilisateurs" : tab === "grades" ? "Grades" : "Statistiques"}
+            </button>
+          ))}
+        </div>
       </div>
 
       {activeTab === "users" && (
@@ -935,7 +948,7 @@ function Admin() {
           {grades.map(g => (
             <div key={g.id} className="card p-4">
               <div className="flex items-center gap-3 mb-4 pb-4 border-b">
-                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: g.color }} />
+                 <div className="w-4 h-4 rounded-full" style={{ backgroundColor: g.color }} />
                  <div>
                    <h3 className="font-semibold text-slate-800">{g.name}</h3>
                    <p className="text-slate-500 text-sm">{g.category} · Niveau {g.level}</p>
@@ -944,7 +957,7 @@ function Admin() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {permissionsList.map(p => (
                   <label key={p.key} className="flex items-center gap-2 cursor-pointer group">
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${g.permissions?.[p.key] ? 'bg-primary-600 border-primary-600' : 'border-slate-300 group-hover:border-slate-400'}`}>{g.permissions?.[p.key] && <Check size={12} className="text-white" />}</div>
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${g.permissions?.[p.key] ? 'bg-blue-600 border-blue-600' : 'border-slate-300 group-hover:border-slate-400'}`}>{g.permissions?.[p.key] && <Check size={12} className="text-white" />}</div>
                     <input type="checkbox" className="hidden" checked={!!g.permissions?.[p.key]} onChange={() => togglePermission(g, p.key)} />
                     <span className={`text-sm ${g.permissions?.[p.key] ? 'text-slate-800' : 'text-slate-500'}`}>{p.label}</span>
                   </label>
@@ -1055,9 +1068,9 @@ function Diagnosis() {
 
         <div>
           {result && result.status !== "unknown" ? (
-             <div className={`card p-5 ${result.status === 'confirmed' ? 'border-emerald-200' : 'border-amber-200'}`}>
+             <div className={`card p-5 ${result.status === 'confirmed' ? 'border-emerald-300' : 'border-amber-300'}`}>
                 <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-                  <div className={`w-2 h-2 rounded-full ${result.status === 'confirmed' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                  <div className={`w-3 h-3 rounded-full ${result.status === 'confirmed' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                   <h2 className="font-semibold text-slate-800">
                       {result.status === 'confirmed' ? "Diagnostic confirmé" : "Diagnostics possibles"}
                   </h2>
@@ -1072,7 +1085,7 @@ function Diagnosis() {
                             <span className={`badge ${r.confidence > 80 ? 'badge-green' : 'badge-yellow'}`}>{r.confidence}%</span>
                          </div>
                          <div className="grid grid-cols-2 gap-2 text-sm pt-2 border-t">
-                            <div><span className="text-slate-400 text-xs">Traitement</span><p className="text-primary-600 font-medium">{r.med}</p></div>
+                            <div><span className="text-slate-400 text-xs">Traitement</span><p className="text-blue-600 font-medium">{r.med}</p></div>
                             <div><span className="text-slate-400 text-xs">Organe cible</span><p className="text-slate-600">{r.organ}</p></div>
                          </div>
                       </div>
@@ -1085,10 +1098,10 @@ function Diagnosis() {
                <HelpCircle size={40} className="mx-auto text-slate-300 mb-3" />
                <h3 className="font-semibold text-slate-800">Aucun résultat</h3>
                <p className="text-slate-500 mt-2 mb-4 text-sm">Les constantes ne correspondent à aucune pathologie connue.</p>
-               <button onClick={reset} className="text-primary-600 hover:text-primary-700 font-medium text-sm">Réessayer</button>
+               <button onClick={reset} className="text-blue-600 hover:text-blue-700 font-medium text-sm">Réessayer</button>
             </div>
           ) : (
-            <div className="card border-dashed p-12 text-center text-slate-400 flex flex-col items-center">
+            <div className="card border-dashed border-2 border-slate-300 bg-slate-50 p-12 text-center text-slate-400 flex flex-col items-center">
                <Stethoscope className="mb-3 opacity-40" size={32} />
                <span className="text-sm">Renseignez les constantes vitales</span>
             </div>
@@ -1121,7 +1134,7 @@ function Dashboard() {
       <h2 className="font-semibold text-slate-800 mb-4">Accès rapide</h2>
       <div className="grid md:grid-cols-3 gap-4">
         <Link to="/diagnosis" className="card p-5 hover:shadow-md transition-shadow group">
-          <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center text-primary-600 mb-3">
+          <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 mb-3">
             <Stethoscope size={20} />
           </div>
           <h3 className="font-medium text-slate-800 mb-0.5 flex items-center gap-2">Diagnostic <ChevronRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" /></h3>
@@ -1176,10 +1189,10 @@ function Roster() {
 function Landing() {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
        <div className="text-center space-y-6">
-          <div className="w-20 h-20 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-            <Heart size={40} className="text-white" fill="white" />
+          <div className="w-24 h-24 bg-white rounded-2xl border-2 border-slate-200 flex items-center justify-center mx-auto shadow-lg p-2">
+            <Logo size={80} />
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-800">MRSA</h1>
@@ -1209,11 +1222,11 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
        <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <div className="w-14 h-14 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow">
-              <Heart size={28} className="text-white" fill="white" />
+            <div className="w-16 h-16 bg-white rounded-xl border flex items-center justify-center mx-auto mb-4 shadow p-2">
+              <Logo size={48} />
             </div>
             <h1 className="text-xl font-semibold text-slate-800">Connexion</h1>
             <p className="text-slate-500 text-sm mt-1">Système de Gestion Médicale MRSA</p>
@@ -1260,7 +1273,7 @@ export default function App() {
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="min-h-screen bg-slate-100 flex items-center justify-center text-slate-500 text-sm">Chargement...</div>
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-500 text-sm">Chargement...</div>
   if (!user) return <Navigate to="/login" />
   return children
 }
