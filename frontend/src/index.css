@@ -202,10 +202,10 @@
   /* Watermark */
   .watermark {
     position: fixed;
-    bottom: 16px;
-    right: 16px;
-    width: 500px;
-    height: 500px;
+    bottom: 12px;
+    right: 12px;
+    width: 350px;
+    height: 350px;
     opacity: 0.05;
     pointer-events: none;
     z-index: 0;
