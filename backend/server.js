@@ -18,20 +18,16 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date() });
 });
 
-// Uploads folder (Attention: Ephemeral sur Railway sans Volume)
-const uploadsDir = path.join(__dirname, "../uploads/profiles");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
 // Middlewares
 app.use(cors({ 
   origin: IS_PROD ? process.env.PUBLIC_URL : true, 
   credentials: true 
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// Augmentation de la limite JSON au cas où une image passerait en JSON (rare mais possible)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Note : On ne sert plus "/uploads" car les images sont maintenant en Base64 dans la DB
 
 // Database & Auth Setup
 const startServer = async () => {
@@ -84,8 +80,7 @@ const startServer = async () => {
     app.use("/api/admin", adminRoutes);
     app.use("/api/reports", reportsRoutes);
 
-    // Serving Frontend (Critical Part)
-    // On résout le chemin de manière absolue pour éviter les erreurs de dossier
+    // Serving Frontend
     const distPath = path.resolve(__dirname, "../frontend/dist");
     const indexPath = path.join(distPath, "index.html");
 
@@ -113,7 +108,6 @@ const startServer = async () => {
 
   } catch (error) {
     console.error("❌ Erreur fatale au démarrage:", error);
-    // On ne crash pas complètement pour laisser les logs accessibles
     app.get("*", (req, res) => res.status(500).json({ error: "Server Failed to Start", details: error.message }));
     app.listen(PORT, () => console.log("⚠️ Server running in degraded mode"));
   }
