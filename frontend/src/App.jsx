@@ -3,8 +3,8 @@ import { createContext, useContext, useState, useEffect, useRef } from "react"
 import { 
   Activity, Users, ClipboardList, Stethoscope, ShieldAlert, 
   LogOut, LayoutDashboard, FileText, Menu, X, 
-  CheckCircle, HelpCircle,
-  Search, Plus, Clock, Edit2, Trash2, Check, Phone, User, FilePlus, ArrowLeft, Send, UserPlus, Eye, Camera, ChevronRight
+  CheckCircle, HelpCircle, MessageSquare,
+  Search, Plus, Clock, Edit2, Trash2, Check, Phone, User, FilePlus, ArrowLeft, Send, UserPlus, Eye, Camera, ChevronRight, ChevronDown
 } from "lucide-react"
 
 // --- Auth Context ---
@@ -131,7 +131,8 @@ function Layout({ children }) {
   const location = useLocation()
   const [mobileMenu, setMobileMenu] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
-  const [profileForm, setProfileForm] = useState({ first_name: "", last_name: "", phone: "", profile_picture: null })
+  // Ajout du champ password
+  const [profileForm, setProfileForm] = useState({ first_name: "", last_name: "", phone: "", password: "", profile_picture: null })
   
   const fileInputRef = useRef(null)
 
@@ -140,6 +141,7 @@ function Layout({ children }) {
         first_name: user.first_name || "", 
         last_name: user.last_name || "", 
         phone: user.phone || "",
+        password: "", // Reset password field
         profile_picture: null
     })
     setShowProfileModal(true)
@@ -151,6 +153,9 @@ function Layout({ children }) {
     formData.append("first_name", profileForm.first_name)
     formData.append("last_name", profileForm.last_name)
     formData.append("phone", profileForm.phone)
+    if (profileForm.password) {
+        formData.append("password", profileForm.password)
+    }
     if (profileForm.profile_picture instanceof File) {
         formData.append("profile_picture", profileForm.profile_picture)
     }
@@ -282,6 +287,11 @@ function Layout({ children }) {
                  <InputField label="Nom" value={profileForm.last_name} onChange={e => setProfileForm({...profileForm, last_name: e.target.value})} required />
               </div>
               <InputField label="Téléphone" value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: e.target.value})} />
+              <div className="border-t pt-3 mt-1">
+                 <p className="label mb-2 text-blue-600">Sécurité</p>
+                 <InputField label="Nouveau mot de passe" type="password" placeholder="Laisser vide pour ne pas changer" value={profileForm.password} onChange={e => setProfileForm({...profileForm, password: e.target.value})} />
+              </div>
+              
               <div className="flex gap-3 pt-3">
                 <button type="button" onClick={() => setShowProfileModal(false)} className="btn-secondary flex-1">Annuler</button>
                 <button type="submit" className="btn-primary flex-1">Enregistrer</button>
@@ -386,7 +396,7 @@ function PublicBooking() {
               <InputField label="Nom & Prénom" placeholder="Jean Dupont" value={form.patient_name} onChange={e => setForm({...form, patient_name: e.target.value})} required />
               <InputField label="Téléphone" placeholder="06 12 34 56 78" value={form.patient_phone} onChange={e => setForm({...form, patient_phone: e.target.value})} required />
             </div>
-            <InputField label="Discord (optionnel)" placeholder="username#0000" value={form.patient_discord} onChange={e => setForm({...form, patient_discord: e.target.value})} />
+            <InputField label="Discord (pour contact)" placeholder="username#0000" value={form.patient_discord} onChange={e => setForm({...form, patient_discord: e.target.value})} />
             
             <SelectField label="Type de rendez-vous" value={form.appointment_type} onChange={e => setForm({...form, appointment_type: e.target.value})}>
               <option value="Consultation">Consultation Générale</option>
@@ -462,10 +472,27 @@ function Patients() {
     setShowModal(true)
   }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Supprimer ce dossier patient ?")) return
-    await fetch(`/api/patients/${id}`, { method: "DELETE", credentials: "include" })
-    load()
+  // --- NOUVELLE LOGIQUE DE SUPPRESSION ---
+  const handleDelete = async (id, force = false) => {
+    if (!force && !window.confirm("Supprimer ce dossier patient ?")) return
+    
+    const url = force ? `/api/patients/${id}?force=true` : `/api/patients/${id}`;
+    const res = await fetch(url, { method: "DELETE", credentials: "include" })
+    
+    if (res.ok) {
+        load();
+    } else {
+        const data = await res.json();
+        // Si erreur 409 Conflict (Rapports existants)
+        if (res.status === 409 && data.requireForce) {
+            if (window.confirm(`ATTENTION : Ce patient possède ${data.count} rapports médicaux.\nVoulez-vous supprimer le patient ET tous ses rapports ?\nCette action est irréversible.`)) {
+                // Tenter de supprimer avec force=true
+                handleDelete(id, true);
+            }
+        } else {
+            alert(data.error || "Erreur lors de la suppression");
+        }
+    }
   }
 
   return (
@@ -665,8 +692,16 @@ function Appointments() {
             <div className="mb-4">
                  {statusBadge(a.status)}
                  <h3 className="text-slate-800 font-bold text-lg mt-2">{a.patient_name}</h3>
-                 <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
-                    <Phone size={14} /> {a.patient_phone || "N/A"}
+                 {/* AJOUT DE L'AFFICHAGE DU DISCORD */}
+                 <div className="flex flex-col gap-1 mt-1">
+                    <div className="flex items-center gap-2 text-slate-500 text-sm">
+                       <Phone size={14} /> {a.patient_phone || "N/A"}
+                    </div>
+                    {a.patient_discord && (
+                       <div className="flex items-center gap-2 text-blue-600 text-sm font-medium">
+                          <MessageSquare size={14} /> {a.patient_discord}
+                       </div>
+                    )}
                  </div>
             </div>
             
@@ -1185,26 +1220,66 @@ function Dashboard() {
 
 function Roster() {
   const [members, setMembers] = useState([])
+
   useEffect(() => { fetch("/api/users/roster", { credentials: "include" }).then(r => r.json()).then(setMembers) }, [])
+
+  // --- LOGIQUE HIERARCHIQUE ---
+  // On regroupe par catégorie, puis on affiche les grades par ordre décroissant de niveau
+  const grouped = members.reduce((acc, m) => {
+      const cat = m.grade_category || "Autres";
+      if(!acc[cat]) acc[cat] = [];
+      acc[cat].push(m);
+      return acc;
+  }, {});
+
+  // Définir un ordre d'affichage des catégories si nécessaire
+  const categoryOrder = ["Direction M.R.S.A", "Chef de service", "Medecine", "Paramedical", "Système", "Autres"];
+  const sortedCategories = Object.keys(grouped).sort((a,b) => {
+      const idxA = categoryOrder.indexOf(a);
+      const idxB = categoryOrder.indexOf(b);
+      // Si les deux sont dans la liste, on trie selon l'ordre. Sinon, on met à la fin.
+      if(idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if(idxA !== -1) return -1;
+      if(idxB !== -1) return 1;
+      return a.localeCompare(b);
+  });
+
   return (
     <Layout>
-      <PageHeader title="Effectifs" subtitle="Personnel en service" />
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {members.map(m => (
-          <div key={m.id} className="card p-5 flex items-center gap-4 hover:shadow-lg transition-shadow">
-             <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm overflow-hidden ring-2 ring-slate-300">
-                {m.profile_picture ? <img src={m.profile_picture} className="w-full h-full object-cover" /> : m.username?.[0].toUpperCase()}
-             </div>
-             <div className="flex-1 min-w-0">
-                <h4 className="text-slate-800 font-semibold truncate">{m.first_name || m.username} {m.last_name}</h4>
-                <div className="text-sm font-bold" style={{ color: m.grade_color }}>{m.grade_name}</div>
-             </div>
-             <div className="text-right flex-shrink-0">
-                <div className="text-slate-500 font-mono text-xs font-semibold">{m.badge_number}</div>
-                <div className="text-slate-400 text-xs">{m.phone || "—"}</div>
-             </div>
-          </div>
-        ))}
+      <PageHeader title="Effectifs" subtitle="Hiérarchie du personnel" />
+      
+      <div className="space-y-8">
+        {sortedCategories.map(cat => {
+            const usersInCat = grouped[cat];
+            // Trier les utilisateurs par grade level DESC
+            usersInCat.sort((a, b) => b.grade_level - a.grade_level);
+
+            return (
+                <div key={cat}>
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 border-b pb-2 flex items-center gap-2">
+                        {cat === 'Direction M.R.S.A' ? <ShieldAlert size={16}/> : <Users size={16}/>}
+                        {cat}
+                    </h3>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {usersInCat.map(m => (
+                          <div key={m.id} className="card p-5 flex items-center gap-4 hover:shadow-lg transition-shadow border-l-4" style={{ borderLeftColor: m.grade_color }}>
+                             <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm overflow-hidden ring-2 ring-slate-300">
+                                {m.profile_picture ? <img src={m.profile_picture} className="w-full h-full object-cover" /> : m.username?.[0].toUpperCase()}
+                             </div>
+                             <div className="flex-1 min-w-0">
+                                <h4 className="text-slate-800 font-semibold truncate">{m.first_name || m.username} {m.last_name}</h4>
+                                <div className="text-sm font-bold" style={{ color: m.grade_color }}>{m.grade_name}</div>
+                             </div>
+                             <div className="text-right flex-shrink-0">
+                                <div className="text-slate-500 font-mono text-xs font-semibold">{m.badge_number}</div>
+                                <div className="text-slate-400 text-xs">{m.phone || "—"}</div>
+                             </div>
+                          </div>
+                        ))}
+                    </div>
+                </div>
+            )
+        })}
       </div>
     </Layout>
   )
