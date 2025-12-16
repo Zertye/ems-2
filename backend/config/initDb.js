@@ -51,7 +51,7 @@ const initDatabase = async () => {
         emergency_contact_phone VARCHAR(20), 
         insurance_number VARCHAR(50), 
         notes TEXT, 
-        photo VARCHAR(255),
+        photo TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -117,15 +117,23 @@ const initDatabase = async () => {
     await addColumnIfNotExists('users', 'phone', 'VARCHAR(20)');
     await addColumnIfNotExists('users', 'badge_number', 'VARCHAR(20)');
     await addColumnIfNotExists('users', 'grade_id', 'INTEGER REFERENCES grades(id)');
-    await addColumnIfNotExists('users', 'visible_grade_id', 'INTEGER REFERENCES grades(id)'); // NEW: Visible RP Grade
-    await addColumnIfNotExists('users', 'profile_picture', 'VARCHAR(255)');
+    await addColumnIfNotExists('users', 'visible_grade_id', 'INTEGER REFERENCES grades(id)');
+    
+    // Modification critique pour supporter les images en Base64 (TEXT au lieu de VARCHAR)
+    await addColumnIfNotExists('users', 'profile_picture', 'TEXT');
+    // On force le type TEXT si la colonne existe déjà en VARCHAR
+    await client.query("ALTER TABLE users ALTER COLUMN profile_picture TYPE TEXT");
+
     await addColumnIfNotExists('users', 'hire_date', 'DATE DEFAULT CURRENT_DATE');
     await addColumnIfNotExists('users', 'is_admin', 'BOOLEAN DEFAULT FALSE');
     await addColumnIfNotExists('users', 'is_active', 'BOOLEAN DEFAULT TRUE');
     await addColumnIfNotExists('users', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
 
     // Colonnes Patients
-    await addColumnIfNotExists('patients', 'photo', 'VARCHAR(255)');
+    // Modification critique pour supporter les images en Base64 (TEXT au lieu de VARCHAR)
+    await addColumnIfNotExists('patients', 'photo', 'TEXT');
+    // On force le type TEXT si la colonne existe déjà en VARCHAR
+    await client.query("ALTER TABLE patients ALTER COLUMN photo TYPE TEXT");
 
     // Nettoyage legacy
     try { await client.query("ALTER TABLE users ALTER COLUMN discord_id DROP NOT NULL"); } catch (e) {}
