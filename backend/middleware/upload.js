@@ -1,40 +1,26 @@
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 
-// Assurer que le dossier existe à la racine (au même niveau que backend/frontend)
-const uploadDir = path.join(__dirname, "../../uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    // Nom unique : timestamp-random.ext
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Utilisation de la mémoire (RAM) au lieu du disque dur.
+// Cela nous permet de récupérer le fichier sous forme de Buffer
+// pour l'enregistrer directement dans la base de données.
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|webp/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const extname = allowedTypes.test(file.originalname.toLowerCase()); // Correction bug path.extname inutile ici si on check la fin du string ou mimetype
   const mimetype = allowedTypes.test(file.mimetype);
 
-  if (extname && mimetype) {
+  if (mimetype) {
     return cb(null, true);
   } else {
     cb(new Error("Format invalide. Seules les images (jpg, png, webp) sont autorisées."));
   }
 };
 
-// Limite de taille : 2MB
+// Limite de taille : 3MB (Augmenté légèrement car Base64 prend plus de place)
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 2 * 1024 * 1024 },
+  limits: { fileSize: 3 * 1024 * 1024 },
   fileFilter: fileFilter
 });
 
