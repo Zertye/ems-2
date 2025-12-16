@@ -8,6 +8,7 @@ const upload = require("../middleware/upload");
 // Liste de tous les utilisateurs (Pour Admin)
 router.get("/", isAuthenticated, hasPermission('manage_users'), async (req, res) => {
   try {
+    // Cette vue est pour les Admins, on veut voir les VRAIS grades
     const result = await pool.query(`
       SELECT u.*, g.name as grade_name, g.category as grade_category, g.level as grade_level, g.color as grade_color
       FROM users u LEFT JOIN grades g ON u.grade_id = g.id ORDER BY g.level DESC, u.first_name
@@ -19,12 +20,21 @@ router.get("/", isAuthenticated, hasPermission('manage_users'), async (req, res)
 });
 
 // Effectifs (Vue publique interne)
+// MODIFIÉ: Utilise le grade visible pour le nom, la couleur et le TRI
 router.get("/roster", isAuthenticated, hasPermission('view_roster'), async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT u.id, u.first_name, u.last_name, u.badge_number, u.profile_picture, u.phone,
-        g.name as grade_name, g.category as grade_category, g.level as grade_level, g.color as grade_color
-      FROM users u LEFT JOIN grades g ON u.grade_id = g.id WHERE u.is_active = true ORDER BY g.level DESC, u.last_name ASC
+      SELECT 
+        u.id, u.first_name, u.last_name, u.badge_number, u.profile_picture, u.phone,
+        COALESCE(vg.name, g.name) as grade_name,
+        COALESCE(vg.category, g.category) as grade_category,
+        COALESCE(vg.level, g.level) as grade_level,
+        COALESCE(vg.color, g.color) as grade_color
+      FROM users u 
+      LEFT JOIN grades g ON u.grade_id = g.id 
+      LEFT JOIN grades vg ON u.visible_grade_id = vg.id
+      WHERE u.is_active = true 
+      ORDER BY COALESCE(vg.level, g.level) DESC, u.last_name ASC
     `);
     res.json(result.rows);
   } catch (err) {
@@ -66,12 +76,17 @@ router.put("/me", isAuthenticated, upload.single('profile_picture'), async (req,
 
     await pool.query(query, params);
     
-    // Récupérer l'utilisateur mis à jour (sans le mot de passe)
+    // Récupérer l'utilisateur mis à jour pour rafraîchir la session (Passport)
     const updated = await pool.query(`
-      SELECT u.id, u.username, u.first_name, u.last_name, u.badge_number, u.is_admin, u.profile_picture, u.phone,
-             g.name as grade_name, g.level as grade_level, g.color as grade_color, g.permissions as grade_permissions
+      SELECT 
+        u.id, u.username, u.first_name, u.last_name, u.badge_number, u.is_admin, u.profile_picture, u.phone,
+        COALESCE(vg.name, g.name) as grade_name,
+        COALESCE(vg.color, g.color) as grade_color,
+        g.level as grade_level,
+        g.permissions as grade_permissions
       FROM users u
       LEFT JOIN grades g ON u.grade_id = g.id
+      LEFT JOIN grades vg ON u.visible_grade_id = vg.id
       WHERE u.id = $1
     `, [req.user.id]);
 
