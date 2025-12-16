@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/database");
+const bcrypt = require("bcrypt");
 const { isAuthenticated, hasPermission } = require("../middleware/auth");
-const upload = require("../middleware/upload"); // Import du middleware
+const upload = require("../middleware/upload"); 
 
 // Liste de tous les utilisateurs (Pour Admin)
 router.get("/", isAuthenticated, hasPermission('manage_users'), async (req, res) => {
@@ -23,7 +24,7 @@ router.get("/roster", isAuthenticated, hasPermission('view_roster'), async (req,
     const result = await pool.query(`
       SELECT u.id, u.first_name, u.last_name, u.badge_number, u.profile_picture, u.phone,
         g.name as grade_name, g.category as grade_category, g.level as grade_level, g.color as grade_color
-      FROM users u LEFT JOIN grades g ON u.grade_id = g.id WHERE u.is_active = true ORDER BY g.level DESC
+      FROM users u LEFT JOIN grades g ON u.grade_id = g.id WHERE u.is_active = true ORDER BY g.level DESC, u.last_name ASC
     `);
     res.json(result.rows);
   } catch (err) {
@@ -31,29 +32,49 @@ router.get("/roster", isAuthenticated, hasPermission('view_roster'), async (req,
   }
 });
 
-// Modification de SON profil (Avec Upload Photo)
+// Modification de SON profil (Avec Upload Photo et Password)
 router.put("/me", isAuthenticated, upload.single('profile_picture'), async (req, res) => {
   try {
-    const { first_name, last_name, phone } = req.body;
+    const { first_name, last_name, phone, password } = req.body;
     
     if (!first_name || !last_name) return res.status(400).json({error: "Nom et prénom requis"});
 
-    let query = "UPDATE users SET first_name = $1, last_name = $2, phone = $3, updated_at = CURRENT_TIMESTAMP";
-    const params = [first_name, last_name, phone];
+    // Construction dynamique de la requête
+    let fields = ["first_name=$1", "last_name=$2", "phone=$3", "updated_at=CURRENT_TIMESTAMP"];
+    let params = [first_name, last_name, phone];
+    let paramIndex = 4;
 
-    if (req.file) {
-        query += `, profile_picture = $4`;
-        params.push(`/uploads/${req.file.filename}`);
-        query += ` WHERE id = $5`;
-        params.push(req.user.id);
-    } else {
-        query += ` WHERE id = $4`;
-        params.push(req.user.id);
+    // Gestion du mot de passe
+    if (password && password.trim() !== "") {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        fields.push(`password=$${paramIndex}`);
+        params.push(hashedPassword);
+        paramIndex++;
     }
+
+    // Gestion de la photo
+    if (req.file) {
+        fields.push(`profile_picture=$${paramIndex}`);
+        params.push(`/uploads/${req.file.filename}`);
+        paramIndex++;
+    }
+
+    // Ajout de l'ID à la fin
+    params.push(req.user.id);
+
+    const query = `UPDATE users SET ${fields.join(", ")} WHERE id=$${paramIndex - 1}`;
 
     await pool.query(query, params);
     
-    const updated = await pool.query("SELECT * FROM users WHERE id = $1", [req.user.id]);
+    // Récupérer l'utilisateur mis à jour (sans le mot de passe)
+    const updated = await pool.query(`
+      SELECT u.id, u.username, u.first_name, u.last_name, u.badge_number, u.is_admin, u.profile_picture, u.phone,
+             g.name as grade_name, g.level as grade_level, g.color as grade_color, g.permissions as grade_permissions
+      FROM users u
+      LEFT JOIN grades g ON u.grade_id = g.id
+      WHERE u.id = $1
+    `, [req.user.id]);
+
     res.json({ success: true, user: updated.rows[0] });
   } catch (err) {
     console.error(err);
