@@ -5,6 +5,7 @@
 @tailwind utilities;
 
 :root {
+  /* Mode Clair (Par défaut) */
   --bg-page: #cbd5e1;
   --bg-card: #ffffff;
   --bg-sidebar: #0f172a;
@@ -17,15 +18,48 @@
   --text-secondary: #334155;
   --text-muted: #64748b;
   --text-sidebar: #cbd5e1;
+  
   --accent-primary: #1d4ed8;
   --accent-primary-hover: #1e40af;
   --accent-light: #dbeafe;
+  
   --accent-success: #059669;
   --accent-success-light: #d1fae5;
+  
   --accent-warning: #d97706;
   --accent-warning-light: #fef3c7;
+  
   --accent-danger: #dc2626;
   --accent-danger-light: #fee2e2;
+}
+
+/* Mode Sombre (Override des variables) */
+.dark {
+  --bg-page: #0f172a; /* Fond très sombre */
+  --bg-card: #1e293b; /* Cartes gris foncé */
+  --bg-sidebar: #020617; /* Sidebar encore plus sombre */
+  --bg-sidebar-hover: #1e293b;
+  --bg-input: #334155;
+  --bg-input-focus: #475569;
+  --border-light: #475569;
+  --border-card: #334155;
+  --text-primary: #f8fafc; /* Texte blanc cassé */
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-sidebar: #e2e8f0;
+
+  --accent-primary: #3b82f6; /* Bleu plus lumineux pour ressortir sur le noir */
+  --accent-primary-hover: #60a5fa;
+  --accent-light: rgba(59, 130, 246, 0.2);
+
+  --accent-success: #34d399;
+  --accent-success-light: rgba(5, 150, 105, 0.2);
+
+  --accent-warning: #fbbf24;
+  --accent-warning-light: rgba(217, 119, 6, 0.2);
+
+  --accent-danger: #f87171;
+  --accent-danger-light: rgba(220, 38, 38, 0.2);
 }
 
 @layer base {
@@ -35,6 +69,7 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
@@ -77,22 +112,20 @@
     @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150;
     background: var(--accent-danger-light);
     color: var(--accent-danger);
-    border: 1px solid #fca5a5;
+    border: 1px solid currentColor;
   }
   .btn-danger:hover {
-    background: #fecaca;
-    border-color: #f87171;
+    opacity: 0.8;
   }
 
   .btn-success {
     @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150;
     background: var(--accent-success-light);
     color: var(--accent-success);
-    border: 1px solid #6ee7b7;
+    border: 1px solid currentColor;
   }
   .btn-success:hover {
-    background: #a7f3d0;
-    border-color: #34d399;
+    opacity: 0.8;
   }
 
   /* Cards avec ombre plus marquée */
@@ -101,6 +134,7 @@
     border: 1px solid var(--border-card);
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
   }
 
   /* Inputs améliorés */
@@ -164,7 +198,7 @@
   /* Tables */
   .table-header {
     @apply text-xs font-bold uppercase tracking-wider px-4 py-3 text-left;
-    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    background: var(--bg-input); /* Changé pour s'adapter au dark mode */
     color: var(--text-secondary);
     border-bottom: 2px solid var(--border-light);
   }
@@ -178,7 +212,7 @@
     @apply transition-colors duration-100;
   }
   .table-row:hover {
-    background: #f8fafc;
+    background: var(--bg-input); /* Changé pour s'adapter au dark mode */
   }
 
   /* Stats */
@@ -195,7 +229,7 @@
   /* Section title */
   .section-title {
     @apply text-xs font-bold uppercase tracking-wider mb-3 px-3;
-    color: #64748b;
+    color: var(--text-muted);
     letter-spacing: 0.1em;
   }
 
@@ -210,6 +244,11 @@
     pointer-events: none;
     z-index: 0;
   }
+  /* En dark mode, on diminue un peu l'opacité du watermark pour qu'il soit subtil */
+  .dark .watermark {
+    opacity: 0.03;
+    filter: invert(1);
+  }
 }
 
 /* Scrollbar */
@@ -218,16 +257,16 @@
   height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #e2e8f0;
+  background: var(--bg-input);
   border-radius: 5px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #94a3b8;
+  background: var(--border-light);
   border-radius: 5px;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--bg-input);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: var(--text-muted);
 }
 
 /* Form cleanup */
@@ -238,7 +277,8 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  /* On utilise une icône inline SVG standard, on l'inverse en CSS si besoin (trop complexe ici, on garde simple) */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 16px;
