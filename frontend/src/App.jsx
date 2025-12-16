@@ -5,7 +5,7 @@ import {
   LogOut, LayoutDashboard, FileText, Menu, X, 
   CheckCircle, HelpCircle, MessageSquare,
   Search, Plus, Clock, Edit2, Trash2, Check, Phone, User, FilePlus, ArrowLeft, Send, UserPlus, Eye, Camera, ChevronRight, ChevronDown,
-  Moon, Sun
+  Moon, Sun, BarChart3, ScrollText, RefreshCw
 } from "lucide-react"
 
 // --- Theme Context ---
@@ -335,13 +335,13 @@ function Layout({ children }) {
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={e => setProfileForm({...profileForm, profile_picture: e.target.files[0]})} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                 <InputField label="Prénom" value={profileForm.first_name} onChange={e => setProfileForm({...form, first_name: e.target.value})} required />
-                 <InputField label="Nom" value={profileForm.last_name} onChange={e => setProfileForm({...form, last_name: e.target.value})} required />
+                 <InputField label="Prénom" value={profileForm.first_name} onChange={e => setProfileForm({...profileForm, first_name: e.target.value})} required />
+                 <InputField label="Nom" value={profileForm.last_name} onChange={e => setProfileForm({...profileForm, last_name: e.target.value})} required />
               </div>
-              <InputField label="Téléphone" value={profileForm.phone} onChange={e => setProfileForm({...form, phone: e.target.value})} />
+              <InputField label="Téléphone" value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: e.target.value})} />
               <div className="border-t dark:border-slate-700 pt-3 mt-1">
                  <p className="label mb-2 text-blue-600 dark:text-blue-400">Sécurité</p>
-                 <InputField label="Nouveau mot de passe" type="password" placeholder="Laisser vide pour ne pas changer" value={profileForm.password} onChange={e => setProfileForm({...form, password: e.target.value})} />
+                 <InputField label="Nouveau mot de passe" type="password" placeholder="Laisser vide pour ne pas changer" value={profileForm.password} onChange={e => setProfileForm({...profileForm, password: e.target.value})} />
               </div>
               
               <div className="flex gap-3 pt-3">
@@ -956,6 +956,11 @@ function Admin() {
   const [usersList, setUsersList] = useState([])
   const [grades, setGrades] = useState([])
   const [stats, setStats] = useState(null)
+  const [logs, setLogs] = useState([])
+  const [logsLoading, setLogsLoading] = useState(false)
+  const [logsLimit, setLogsLimit] = useState(50)
+  const [performance, setPerformance] = useState([])
+  const [performanceLoading, setPerformanceLoading] = useState(false)
   
   const [showUserModal, setShowUserModal] = useState(false)
   const [userForm, setUserForm] = useState({ id: null, username: "", password: "", first_name: "", last_name: "", badge_number: "", grade_id: "", visible_grade_id: "" })
@@ -966,7 +971,47 @@ function Admin() {
     fetch("/api/admin/grades", { credentials: "include" }).then(r => r.json()).then(setGrades)
   }
 
+  const loadLogs = async () => {
+    setLogsLoading(true)
+    try {
+      const res = await fetch(`/api/admin/logs?limit=${logsLimit}`, { credentials: "include" })
+      if (res.ok) {
+        const data = await res.json()
+        setLogs(data)
+      }
+    } catch (err) {
+      console.error("Erreur chargement logs:", err)
+    }
+    setLogsLoading(false)
+  }
+
+  const loadPerformance = async () => {
+    setPerformanceLoading(true)
+    try {
+      const res = await fetch("/api/admin/performance", { credentials: "include" })
+      if (res.ok) {
+        const data = await res.json()
+        setPerformance(data)
+      }
+    } catch (err) {
+      console.error("Erreur chargement performance:", err)
+    }
+    setPerformanceLoading(false)
+  }
+
   useEffect(() => { if (isAdmin) loadAdminData() }, [isAdmin])
+  
+  useEffect(() => {
+    if (activeTab === "logs" && hasPerm('view_logs')) {
+      loadLogs()
+    }
+  }, [activeTab, logsLimit])
+
+  useEffect(() => {
+    if (activeTab === "performance" && hasPerm('view_logs')) {
+      loadPerformance()
+    }
+  }, [activeTab])
 
   const togglePermission = async (grade, perm) => {
     const newPerms = { ...grade.permissions, [perm]: !grade.permissions?.[perm] }
@@ -1019,6 +1064,40 @@ function Admin() {
       setShowUserModal(true); 
   }
 
+  // Fonction pour formater l'action en badge coloré
+  const getActionBadge = (action) => {
+    const actionColors = {
+      'CREATE_USER': 'badge-green',
+      'UPDATE_USER': 'badge-blue',
+      'DELETE_USER': 'badge-red',
+      'CREATE_REPORT': 'badge-green',
+      'DELETE_REPORT': 'badge-red',
+      'CREATE_GRADE': 'badge-green',
+      'UPDATE_GRADE': 'badge-blue',
+      'DELETE_GRADE': 'badge-red',
+      'CREATE_PATIENT': 'badge-green',
+      'DELETE_PATIENT': 'badge-red',
+    }
+    return actionColors[action] || 'badge-yellow'
+  }
+
+  // Fonction pour formater l'action en texte lisible
+  const formatAction = (action) => {
+    const actionLabels = {
+      'CREATE_USER': 'Création utilisateur',
+      'UPDATE_USER': 'Modification utilisateur',
+      'DELETE_USER': 'Suppression utilisateur',
+      'CREATE_REPORT': 'Création rapport',
+      'DELETE_REPORT': 'Suppression rapport',
+      'CREATE_GRADE': 'Création grade',
+      'UPDATE_GRADE': 'Modification grade',
+      'DELETE_GRADE': 'Suppression grade',
+      'CREATE_PATIENT': 'Création patient',
+      'DELETE_PATIENT': 'Suppression patient',
+    }
+    return actionLabels[action] || action
+  }
+
   if (!isAdmin) return <Navigate to="/dashboard" />
 
   const permissionsList = [
@@ -1032,17 +1111,31 @@ function Admin() {
     { key: "view_roster", label: "Voir Effectifs" },
     { key: "manage_users", label: "Gérer Utilisateurs" },
     { key: "delete_users", label: "Supprimer Utilisateurs" },
+    { key: "view_logs", label: "Voir Logs/Stats" },
   ]
+
+  const tabs = [
+    { id: "users", label: "Utilisateurs", icon: Users },
+    { id: "grades", label: "Grades", icon: ShieldAlert },
+    { id: "stats", label: "Statistiques", icon: Activity },
+  ]
+  
+  // Ajouter les onglets conditionnellement si l'utilisateur a la permission
+  if (hasPerm('view_logs')) {
+    tabs.push({ id: "performance", label: "Performance", icon: BarChart3 })
+    tabs.push({ id: "logs", label: "Logs", icon: ScrollText })
+  }
 
   return (
     <Layout>
       <PageHeader title="Administration" subtitle="Gestion du système" />
       
       <div className="card mb-6">
-        <div className="flex border-b dark:border-slate-700">
-          {["users", "grades", "stats"].map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 py-4 text-sm font-bold border-b-2 -mb-px transition-all ${activeTab === tab ? "border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
-              {tab === "users" ? "Utilisateurs" : tab === "grades" ? "Grades" : "Statistiques"}
+        <div className="flex border-b dark:border-slate-700 overflow-x-auto">
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-6 py-4 text-sm font-bold border-b-2 -mb-px transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === tab.id ? "border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
+              <tab.icon size={16} />
+              {tab.label}
             </button>
           ))}
         </div>
@@ -1108,18 +1201,212 @@ function Admin() {
       )}
 
       {activeTab === "stats" && (
-         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {stats ? (
-                <>
-                    <StatCard label="Patients" value={stats.patients?.total || 0} icon={Users} color="blue" />
-                    <StatCard label="Rapports" value={stats.reports?.total || 0} icon={FileText} color="green" />
-                    <StatCard label="RDV en attente" value={stats.appointments?.pending || 0} icon={Clock} color="yellow" />
-                    <StatCard label="Effectif" value={stats.users?.total || 0} icon={Activity} color="blue" />
-                </>
-            ) : (
-                <div className="col-span-4 text-center text-slate-400 py-12 font-medium">Chargement...</div>
+         <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {stats ? (
+                  <>
+                      <StatCard label="Patients" value={stats.patients?.total || 0} icon={Users} color="blue" />
+                      <StatCard label="Rapports" value={stats.reports?.total || 0} icon={FileText} color="green" />
+                      <StatCard label="RDV en attente" value={stats.appointments?.pending || 0} icon={Clock} color="yellow" />
+                      <StatCard label="Effectif" value={stats.users?.total || 0} icon={Activity} color="blue" />
+                  </>
+              ) : (
+                  <div className="col-span-4 text-center text-slate-400 py-12 font-medium">Chargement...</div>
+              )}
+            </div>
+
+            {/* Distribution des grades */}
+            {stats?.gradeDistribution && stats.gradeDistribution.length > 0 && (
+              <div className="card p-5">
+                <h3 className="font-bold text-lg text-slate-800 dark:text-white mb-4">Répartition par grade</h3>
+                <div className="space-y-3">
+                  {stats.gradeDistribution.map((g, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <div className="w-32 text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{g.name}</div>
+                      <div className="flex-1 bg-slate-100 dark:bg-slate-700 rounded-full h-6 overflow-hidden">
+                        <div 
+                          className="h-full rounded-full flex items-center justify-end pr-2 transition-all duration-500"
+                          style={{ 
+                            width: `${Math.max((parseInt(g.count) / Math.max(...stats.gradeDistribution.map(x => parseInt(x.count)), 1)) * 100, 10)}%`,
+                            backgroundColor: g.color || '#3b82f6'
+                          }}
+                        >
+                          <span className="text-white text-xs font-bold">{g.count}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
          </div>
+      )}
+
+      {activeTab === "performance" && hasPerm('view_logs') && (
+        <div className="card">
+          <div className="p-4 border-b dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 rounded-t-xl flex justify-between items-center">
+            <div>
+              <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <BarChart3 size={20} className="text-blue-600" />
+                Performance du personnel
+              </h3>
+              <p className="text-sm text-slate-500 mt-1">Statistiques d'activité par membre</p>
+            </div>
+            <button onClick={loadPerformance} className="btn-secondary">
+              <RefreshCw size={16} className={`mr-2 ${performanceLoading ? 'animate-spin' : ''}`} /> Actualiser
+            </button>
+          </div>
+          
+          {performanceLoading ? (
+            <div className="p-12 text-center text-slate-400">
+              <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
+              Chargement...
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className="table-header">Membre</th>
+                    <th className="table-header text-center">Rapports</th>
+                    <th className="table-header text-center">Patients créés</th>
+                    <th className="table-header text-center">RDV terminés</th>
+                    <th className="table-header text-center">Actions totales</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {performance.map((p, i) => (
+                    <tr key={p.id} className="table-row">
+                      <td className="table-cell">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: p.grade_color || '#64748b' }}>
+                            {i + 1}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-slate-800 dark:text-white">{p.first_name} {p.last_name}</div>
+                            <div className="text-xs" style={{ color: p.grade_color }}>{p.grade_name}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="table-cell text-center">
+                        <span className={`font-mono font-bold text-lg ${parseInt(p.reports_count) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                          {p.reports_count}
+                        </span>
+                      </td>
+                      <td className="table-cell text-center">
+                        <span className={`font-mono font-bold text-lg ${parseInt(p.patients_created) > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
+                          {p.patients_created}
+                        </span>
+                      </td>
+                      <td className="table-cell text-center">
+                        <span className={`font-mono font-bold text-lg ${parseInt(p.appointments_completed) > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}`}>
+                          {p.appointments_completed}
+                        </span>
+                      </td>
+                      <td className="table-cell text-center">
+                        <span className="font-mono font-semibold text-slate-600 dark:text-slate-300">
+                          {p.total_actions}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {performance.length === 0 && (
+                    <tr><td colSpan="5" className="p-10 text-center text-slate-400 font-medium">Aucune donnée de performance</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "logs" && hasPerm('view_logs') && (
+        <div className="card">
+          <div className="p-4 border-b dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 rounded-t-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <ScrollText size={20} className="text-amber-600" />
+                Journal d'activité
+              </h3>
+              <p className="text-sm text-slate-500 mt-1">Historique des actions système</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <SelectField 
+                value={logsLimit} 
+                onChange={e => setLogsLimit(parseInt(e.target.value))}
+                className="w-auto"
+              >
+                <option value="25">25 derniers</option>
+                <option value="50">50 derniers</option>
+                <option value="100">100 derniers</option>
+                <option value="200">200 derniers</option>
+              </SelectField>
+              <button onClick={loadLogs} className="btn-secondary">
+                <RefreshCw size={16} className={`mr-2 ${logsLoading ? 'animate-spin' : ''}`} /> Actualiser
+              </button>
+            </div>
+          </div>
+          
+          {logsLoading ? (
+            <div className="p-12 text-center text-slate-400">
+              <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
+              Chargement...
+            </div>
+          ) : (
+            <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+              <table className="w-full">
+                <thead className="sticky top-0 bg-white dark:bg-slate-800 z-10">
+                  <tr>
+                    <th className="table-header">Date</th>
+                    <th className="table-header">Utilisateur</th>
+                    <th className="table-header">Action</th>
+                    <th className="table-header">Détails</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log, i) => (
+                    <tr key={log.id || i} className="table-row">
+                      <td className="table-cell whitespace-nowrap">
+                        <div className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                          {new Date(log.created_at).toLocaleDateString('fr-FR')}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {new Date(log.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </td>
+                      <td className="table-cell">
+                        {log.first_name ? (
+                          <div>
+                            <div className="font-semibold text-slate-800 dark:text-white">{log.first_name} {log.last_name}</div>
+                            <div className="text-xs text-slate-400 font-mono">{log.badge_number}</div>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 italic">Système</span>
+                        )}
+                      </td>
+                      <td className="table-cell">
+                        <span className={`badge ${getActionBadge(log.action)}`}>
+                          {formatAction(log.action)}
+                        </span>
+                      </td>
+                      <td className="table-cell">
+                        <div className="text-sm text-slate-600 dark:text-slate-300 max-w-md truncate" title={log.details}>
+                          {log.details}
+                        </div>
+                        {log.target_id && (
+                          <div className="text-xs text-slate-400 font-mono">ID: {log.target_id}</div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {logs.length === 0 && (
+                    <tr><td colSpan="4" className="p-10 text-center text-slate-400 font-medium">Aucun log enregistré</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       )}
 
       {showUserModal && (
