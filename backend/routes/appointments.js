@@ -3,20 +3,61 @@ const router = express.Router();
 const pool = require("../config/database");
 const { isAuthenticated, hasPermission } = require("../middleware/auth");
 
+// Prise de RDV Publique (Avec Notification Discord)
 router.post("/public", async (req, res) => {
   try {
     const { patient_name, patient_phone, patient_discord, appointment_type, preferred_date, preferred_time, description } = req.body;
+    
     if (!patient_name) return res.status(400).json({ error: "Nom requis" });
+    
     const result = await pool.query(
       "INSERT INTO appointments (patient_name, patient_phone, patient_discord, appointment_type, preferred_date, preferred_time, description) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *",
       [patient_name, patient_phone, patient_discord, appointment_type, preferred_date || null, preferred_time || null, description]
     );
+
+    // --- NOTIFICATION DISCORD ---
+    try {
+        const webhookUrl = "https://discord.com/api/webhooks/1450600265211318424/Z76rqOyQkL7QRCM-VUO-F06pwpO1UGGcFiW7EeZo3RNif8Um2zKrU_Qhg2aqc-Ugsna7";
+        const targetUrl = "https://ems-2-production.up.railway.app/appointments";
+        
+        // Node.js 18+ possède fetch nativement
+        await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                content: "🚨 **Nouveau rendez-vous en attente !**",
+                embeds: [{
+                    title: "Nouvelle Demande de Rendez-vous",
+                    url: targetUrl,
+                    color: 3899894, // Bleu Médical (#3b82f6)
+                    description: `Un patient a sollicité un rendez-vous.\n[**Cliquez ici pour gérer les rendez-vous**](${targetUrl})`,
+                    fields: [
+                        { name: "👤 Patient", value: patient_name, inline: true },
+                        { name: "📞 Téléphone", value: patient_phone || "Non renseigné", inline: true },
+                        { name: "💬 Discord", value: patient_discord || "Non renseigné", inline: true },
+                        { name: "📅 Date souhaitée", value: `${preferred_date} à ${preferred_time}`, inline: false },
+                        { name: "📋 Motif", value: description || "Aucun détail fourni", inline: false },
+                        { name: "🩺 Type", value: appointment_type, inline: true }
+                    ],
+                    footer: { text: "MRSA Medical System • Notification Automatique" },
+                    timestamp: new Date().toISOString()
+                }]
+            })
+        });
+    } catch (discordErr) {
+        console.error("❌ Erreur envoi Webhook Discord:", discordErr);
+        // On ne bloque pas la réponse au client même si Discord échoue
+    }
+    // ----------------------------
+
     res.status(201).json(result.rows[0]);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
 
+// Liste des RDV
 router.get("/", isAuthenticated, async (req, res) => {
   try {
     const { status, assigned_to_me } = req.query;
@@ -37,6 +78,7 @@ router.get("/", isAuthenticated, async (req, res) => {
   }
 });
 
+// Assigner un RDV
 router.post("/:id/assign", isAuthenticated, hasPermission('manage_appointments'), async (req, res) => {
   try {
     await pool.query("UPDATE appointments SET assigned_medic_id = $1, status = 'assigned', updated_at = CURRENT_TIMESTAMP WHERE id = $2", [req.user.id, req.params.id]);
@@ -46,6 +88,7 @@ router.post("/:id/assign", isAuthenticated, hasPermission('manage_appointments')
   }
 });
 
+// Terminer un RDV
 router.post("/:id/complete", isAuthenticated, hasPermission('manage_appointments'), async (req, res) => {
   try {
     const { completion_notes } = req.body;
@@ -56,6 +99,7 @@ router.post("/:id/complete", isAuthenticated, hasPermission('manage_appointments
   }
 });
 
+// Annuler un RDV
 router.post("/:id/cancel", isAuthenticated, hasPermission('manage_appointments'), async (req, res) => {
   try {
     await pool.query("UPDATE appointments SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = $1", [req.params.id]);
@@ -79,6 +123,7 @@ router.delete("/:id", isAuthenticated, hasPermission('manage_appointments'), asy
   }
 });
 
+// Stats RDV
 router.get("/stats/overview", isAuthenticated, async (req, res) => {
   try {
     const global = await pool.query("SELECT status, COUNT(*) FROM appointments GROUP BY status");
