@@ -40,6 +40,42 @@ router.get("/roster", isAuthenticated, hasPermission('view_roster'), async (req,
   }
 });
 
+// --- NOUVELLE ROUTE : Statistiques Personnelles (Dashboard) ---
+router.get("/me/stats", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // On exécute plusieurs requêtes en parallèle pour la performance
+    const [reports, patients, appointments, recentReports] = await Promise.all([
+      // Compte des rapports créés par l'utilisateur (en tant que médecin traitant)
+      pool.query("SELECT COUNT(*) FROM medical_reports WHERE medic_id = $1", [userId]),
+      // Compte des patients créés par l'utilisateur
+      pool.query("SELECT COUNT(*) FROM patients WHERE created_by = $1", [userId]),
+      // Compte des rendez-vous assignés à l'utilisateur et terminés
+      pool.query("SELECT COUNT(*) FROM appointments WHERE assigned_medic_id = $1 AND status = 'completed'", [userId]),
+      // Les 5 derniers rapports pour l'activité récente
+      pool.query(`
+        SELECT mr.id, mr.diagnosis, mr.incident_date, p.first_name, p.last_name 
+        FROM medical_reports mr 
+        JOIN patients p ON mr.patient_id = p.id 
+        WHERE mr.medic_id = $1 
+        ORDER BY mr.incident_date DESC 
+        LIMIT 5
+      `, [userId])
+    ]);
+
+    res.json({
+      my_reports: parseInt(reports.rows[0]?.count || 0),
+      my_patients: parseInt(patients.rows[0]?.count || 0),
+      my_appointments: parseInt(appointments.rows[0]?.count || 0),
+      recent_activity: recentReports.rows
+    });
+  } catch (err) {
+    console.error("Erreur Stats Perso:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 // Modification de SON profil (Avec Upload Photo Base64 et Password)
 router.put("/me", isAuthenticated, upload.single('profile_picture'), async (req, res) => {
   try {
@@ -73,8 +109,6 @@ router.put("/me", isAuthenticated, upload.single('profile_picture'), async (req,
     // Ajout de l'ID à la fin
     params.push(req.user.id);
 
-    // CORRECTION ICI : Utilisation de paramIndex directement au lieu de paramIndex - 1
-    // paramIndex correspond bien au numéro du paramètre de l'ID qu'on vient d'ajouter
     const query = `UPDATE users SET ${fields.join(", ")} WHERE id=$${paramIndex}`;
 
     await pool.query(query, params);
