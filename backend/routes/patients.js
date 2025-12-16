@@ -26,17 +26,24 @@ router.get("/", isAuthenticated, hasPermission('view_patients'), async (req, res
   }
 });
 
-// Création (Support Upload Photo)
+// Création (Support Upload Base64)
 router.post("/", isAuthenticated, hasPermission('create_patients'), upload.single('photo'), async (req, res) => {
   try {
     const { first_name, last_name, date_of_birth, gender, phone, insurance_number, chronic_conditions } = req.body;
-    const photoPath = req.file ? `/uploads/${req.file.filename}` : null;
+    
+    // Conversion Buffer -> Base64
+    let photoData = null;
+    if (req.file) {
+      const b64 = req.file.buffer.toString('base64');
+      const mime = req.file.mimetype;
+      photoData = `data:${mime};base64,${b64}`;
+    }
 
     const result = await pool.query(
       `INSERT INTO patients 
       (first_name, last_name, date_of_birth, gender, phone, insurance_number, chronic_conditions, photo, blood_type, allergies, address, emergency_contact_name, emergency_contact_phone) 
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8, '', '', '', '', '') RETURNING *`,
-      [first_name, last_name, date_of_birth || null, gender, phone, insurance_number, chronic_conditions, photoPath]
+      [first_name, last_name, date_of_birth || null, gender, phone, insurance_number, chronic_conditions, photoData]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -62,7 +69,7 @@ router.get("/:id", isAuthenticated, hasPermission('view_patients'), async (req, 
   }
 });
 
-// Mise à jour (Support Upload Photo)
+// Mise à jour (Support Upload Base64)
 router.put("/:id", isAuthenticated, hasPermission('create_patients'), upload.single('photo'), async (req, res) => {
   try {
     const { first_name, last_name, date_of_birth, gender, phone, insurance_number, chronic_conditions } = req.body;
@@ -74,7 +81,10 @@ router.put("/:id", isAuthenticated, hasPermission('create_patients'), upload.sin
     
     if (req.file) {
       query += `, photo=$${params.length + 1}`;
-      params.push(`/uploads/${req.file.filename}`);
+      const b64 = req.file.buffer.toString('base64');
+      const mime = req.file.mimetype;
+      const photoData = `data:${mime};base64,${b64}`;
+      params.push(photoData);
     }
 
     query += ` WHERE id=$${params.length + 1}`;
@@ -101,11 +111,6 @@ router.delete("/:id", isAuthenticated, hasPermission('delete_patients'), async (
 
     if (reportCount > 0) {
         if (force === 'true') {
-            // VÉRIFICATION CRITIQUE DES PERMISSIONS
-            // L'utilisateur doit avoir 'delete_patients' (déjà vérifié par middleware) 
-            // ET 'delete_reports' pour effectuer une suppression en cascade.
-            
-            // On reconstruit la logique de permission manuellement car middleware déjà passé
             const userPerms = req.user.grade_permissions || {};
             const isSuperAdmin = req.user.grade_level === 99 || req.user.is_admin;
             
@@ -114,16 +119,13 @@ router.delete("/:id", isAuthenticated, hasPermission('delete_patients'), async (
                  return res.status(403).json({ error: "Permission manquante : Supprimer Rapports (delete_reports) requise pour la suppression en cascade." });
             }
             
-            // Suppression des rapports
             await client.query("DELETE FROM medical_reports WHERE patient_id = $1", [req.params.id]);
         } else {
             await client.query('ROLLBACK');
-            // Code 409 Conflict pour signaler au frontend de demander confirmation
             return res.status(409).json({ error: "Ce patient possède des rapports médicaux.", requireForce: true, count: reportCount });
         }
     }
 
-    // Suppression du patient
     await client.query("DELETE FROM patients WHERE id = $1", [req.params.id]);
     await client.query('COMMIT');
     res.json({ success: true });
