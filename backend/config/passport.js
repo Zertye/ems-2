@@ -9,11 +9,19 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (id, done) => {
   try {
+    // MODIFICATION: On récupère les infos visuelles du 'visible_grade_id' si défini,
+    // sinon on prend le 'grade_id' normal.
+    // MAIS on garde 'grade_level' du VRAI grade pour les permissions backend.
     const result = await pool.query(`
-      SELECT u.id, u.username, u.first_name, u.last_name, u.badge_number, u.is_admin, u.profile_picture,
-             g.name as grade_name, g.level as grade_level, g.color as grade_color, g.permissions as grade_permissions
+      SELECT 
+        u.id, u.username, u.first_name, u.last_name, u.badge_number, u.is_admin, u.profile_picture, u.visible_grade_id,
+        COALESCE(vg.name, g.name) as grade_name,
+        COALESCE(vg.color, g.color) as grade_color,
+        g.level as grade_level, -- IMPORTANT: Garder le niveau réel pour les permissions (99, etc)
+        g.permissions as grade_permissions
       FROM users u
       LEFT JOIN grades g ON u.grade_id = g.id
+      LEFT JOIN grades vg ON u.visible_grade_id = vg.id
       WHERE u.id = $1
     `, [id]);
     done(null, result.rows[0] || null);
