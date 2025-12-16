@@ -25,7 +25,7 @@ router.post("/public", async (req, res) => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                content: "🚨 **Nouveau rendez-vous en attente !**",
+                // content: "...", // Suppression du message texte
                 embeds: [{
                     title: "Nouvelle Demande de Rendez-vous",
                     url: targetUrl,
