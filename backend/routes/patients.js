@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../config/database");
 const { isAuthenticated, hasPermission } = require("../middleware/auth");
-const upload = require("../middleware/upload"); // Le middleware qu'on vient de créer
+const upload = require("../middleware/upload");
 
 // Liste avec recherche
 router.get("/", isAuthenticated, hasPermission('view_patients'), async (req, res) => {
@@ -30,8 +30,6 @@ router.get("/", isAuthenticated, hasPermission('view_patients'), async (req, res
 router.post("/", isAuthenticated, hasPermission('create_patients'), upload.single('photo'), async (req, res) => {
   try {
     const { first_name, last_name, date_of_birth, gender, phone, insurance_number, chronic_conditions } = req.body;
-    
-    // Si un fichier est uploadé, on sauvegarde son chemin
     const photoPath = req.file ? `/uploads/${req.file.filename}` : null;
 
     const result = await pool.query(
@@ -74,7 +72,6 @@ router.put("/:id", isAuthenticated, hasPermission('create_patients'), upload.sin
     
     const params = [first_name, last_name, date_of_birth || null, gender, phone, insurance_number, chronic_conditions];
     
-    // Si nouvelle photo, on met à jour, sinon on garde l'ancienne
     if (req.file) {
       query += `, photo=$${params.length + 1}`;
       params.push(`/uploads/${req.file.filename}`);
@@ -91,13 +88,52 @@ router.put("/:id", isAuthenticated, hasPermission('create_patients'), upload.sin
   }
 });
 
-// Suppression
+// Suppression avec Cascade Sécurisée
 router.delete("/:id", isAuthenticated, hasPermission('delete_patients'), async (req, res) => {
+  const client = await pool.connect();
   try {
-    await pool.query("DELETE FROM patients WHERE id = $1", [req.params.id]);
+    const { force } = req.query; // Force la suppression même s'il y a des rapports
+    await client.query('BEGIN');
+
+    // Vérifier s'il y a des rapports liés
+    const reportsCheck = await client.query("SELECT COUNT(*) FROM medical_reports WHERE patient_id = $1", [req.params.id]);
+    const reportCount = parseInt(reportsCheck.rows[0].count);
+
+    if (reportCount > 0) {
+        if (force === 'true') {
+            // VÉRIFICATION CRITIQUE DES PERMISSIONS
+            // L'utilisateur doit avoir 'delete_patients' (déjà vérifié par middleware) 
+            // ET 'delete_reports' pour effectuer une suppression en cascade.
+            
+            // On reconstruit la logique de permission manuellement car middleware déjà passé
+            const userPerms = req.user.grade_permissions || {};
+            const isSuperAdmin = req.user.grade_level === 99 || req.user.is_admin;
+            
+            if (!isSuperAdmin && !userPerms['delete_reports']) {
+                 await client.query('ROLLBACK');
+                 return res.status(403).json({ error: "Permission manquante : Supprimer Rapports (delete_reports) requise pour la suppression en cascade." });
+            }
+            
+            // Suppression des rapports
+            await client.query("DELETE FROM medical_reports WHERE patient_id = $1", [req.params.id]);
+        } else {
+            await client.query('ROLLBACK');
+            // Code 409 Conflict pour signaler au frontend de demander confirmation
+            return res.status(409).json({ error: "Ce patient possède des rapports médicaux.", requireForce: true, count: reportCount });
+        }
+    }
+
+    // Suppression du patient
+    await client.query("DELETE FROM patients WHERE id = $1", [req.params.id]);
+    await client.query('COMMIT');
     res.json({ success: true });
+
   } catch (err) {
-    res.status(400).json({ error: "Impossible de supprimer: Dossier contient des rapports médicaux" });
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur lors de la suppression" });
+  } finally {
+    client.release();
   }
 });
 
