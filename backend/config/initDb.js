@@ -52,6 +52,7 @@ const initDatabase = async () => {
         insurance_number VARCHAR(50), 
         notes TEXT, 
         photo TEXT,
+        created_by INTEGER REFERENCES users(id), -- Ajout de la référence créateur
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -98,6 +99,15 @@ const initDatabase = async () => {
         expire TIMESTAMP(6) NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_session_expire ON session(expire);
+      
+      CREATE TABLE IF NOT EXISTS logs (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        action VARCHAR(50),
+        details TEXT,
+        target_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     // 2. MIGRATION INTELLIGENTE (Ajout des colonnes manquantes sans casser la DB)
@@ -119,9 +129,7 @@ const initDatabase = async () => {
     await addColumnIfNotExists('users', 'grade_id', 'INTEGER REFERENCES grades(id)');
     await addColumnIfNotExists('users', 'visible_grade_id', 'INTEGER REFERENCES grades(id)');
     
-    // Modification critique pour supporter les images en Base64 (TEXT au lieu de VARCHAR)
     await addColumnIfNotExists('users', 'profile_picture', 'TEXT');
-    // On force le type TEXT si la colonne existe déjà en VARCHAR
     await client.query("ALTER TABLE users ALTER COLUMN profile_picture TYPE TEXT");
 
     await addColumnIfNotExists('users', 'hire_date', 'DATE DEFAULT CURRENT_DATE');
@@ -130,10 +138,10 @@ const initDatabase = async () => {
     await addColumnIfNotExists('users', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
 
     // Colonnes Patients
-    // Modification critique pour supporter les images en Base64 (TEXT au lieu de VARCHAR)
     await addColumnIfNotExists('patients', 'photo', 'TEXT');
-    // On force le type TEXT si la colonne existe déjà en VARCHAR
     await client.query("ALTER TABLE patients ALTER COLUMN photo TYPE TEXT");
+    // Ajout de la colonne created_by manquante pour les logs de performance
+    await addColumnIfNotExists('patients', 'created_by', 'INTEGER REFERENCES users(id)');
 
     // Nettoyage legacy
     try { await client.query("ALTER TABLE users ALTER COLUMN discord_id DROP NOT NULL"); } catch (e) {}
@@ -162,7 +170,7 @@ const initDatabase = async () => {
       `);
     }
 
-    // Assurer l'existence du grade DEV (Super Admin caché)
+    // Assurer l'existence du grade DEV
     const devGradeCheck = await client.query("SELECT * FROM grades WHERE name = 'Développeur'");
     if (devGradeCheck.rows.length === 0) {
       const allPerms = JSON.stringify({ access_dashboard: true, view_patients: true, create_patients: true, delete_patients: true, create_reports: true, delete_reports: true, manage_appointments: true, delete_appointments: true, view_roster: true, manage_users: true, delete_users: true, manage_grades: true, view_logs: true });
