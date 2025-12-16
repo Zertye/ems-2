@@ -8,7 +8,6 @@ const upload = require("../middleware/upload");
 // Liste de tous les utilisateurs (Pour Admin)
 router.get("/", isAuthenticated, hasPermission('manage_users'), async (req, res) => {
   try {
-    // Cette vue est pour les Admins, on veut voir les VRAIS grades
     const result = await pool.query(`
       SELECT u.*, g.name as grade_name, g.category as grade_category, g.level as grade_level, g.color as grade_color
       FROM users u LEFT JOIN grades g ON u.grade_id = g.id ORDER BY g.level DESC, u.first_name
@@ -20,7 +19,6 @@ router.get("/", isAuthenticated, hasPermission('manage_users'), async (req, res)
 });
 
 // Effectifs (Vue publique interne)
-// MODIFIÉ: Utilise le grade visible pour le nom, la couleur et le TRI
 router.get("/roster", isAuthenticated, hasPermission('view_roster'), async (req, res) => {
   try {
     const result = await pool.query(`
@@ -42,7 +40,7 @@ router.get("/roster", isAuthenticated, hasPermission('view_roster'), async (req,
   }
 });
 
-// Modification de SON profil (Avec Upload Photo et Password)
+// Modification de SON profil (Avec Upload Photo Base64 et Password)
 router.put("/me", isAuthenticated, upload.single('profile_picture'), async (req, res) => {
   try {
     const { first_name, last_name, phone, password } = req.body;
@@ -62,10 +60,13 @@ router.put("/me", isAuthenticated, upload.single('profile_picture'), async (req,
         paramIndex++;
     }
 
-    // Gestion de la photo
+    // Gestion de la photo (Base64)
     if (req.file) {
         fields.push(`profile_picture=$${paramIndex}`);
-        params.push(`/uploads/${req.file.filename}`);
+        const b64 = req.file.buffer.toString('base64');
+        const mime = req.file.mimetype;
+        const photoData = `data:${mime};base64,${b64}`;
+        params.push(photoData);
         paramIndex++;
     }
 
