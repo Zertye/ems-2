@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require("../config/database");
 const { isAuthenticated, hasPermission } = require("../middleware/auth");
 const upload = require("../middleware/upload");
+const logAction = require("../utils/logger"); // Ajout de l'import Logger
 
 // Liste avec recherche
 router.get("/", isAuthenticated, hasPermission('view_patients'), async (req, res) => {
@@ -26,7 +27,7 @@ router.get("/", isAuthenticated, hasPermission('view_patients'), async (req, res
   }
 });
 
-// Création (Support Upload Base64)
+// Création (Support Upload Base64) + LOGS + Created_By
 router.post("/", isAuthenticated, hasPermission('create_patients'), upload.single('photo'), async (req, res) => {
   try {
     const { first_name, last_name, date_of_birth, gender, phone, insurance_number, chronic_conditions } = req.body;
@@ -41,10 +42,14 @@ router.post("/", isAuthenticated, hasPermission('create_patients'), upload.singl
 
     const result = await pool.query(
       `INSERT INTO patients 
-      (first_name, last_name, date_of_birth, gender, phone, insurance_number, chronic_conditions, photo, blood_type, allergies, address, emergency_contact_name, emergency_contact_phone) 
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8, '', '', '', '', '') RETURNING *`,
-      [first_name, last_name, date_of_birth || null, gender, phone, insurance_number, chronic_conditions, photoData]
+      (first_name, last_name, date_of_birth, gender, phone, insurance_number, chronic_conditions, photo, created_by, blood_type, allergies, address, emergency_contact_name, emergency_contact_phone) 
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, '', '', '', '', '') RETURNING *`,
+      [first_name, last_name, date_of_birth || null, gender, phone, insurance_number, chronic_conditions, photoData, req.user.id]
     );
+
+    // LOG DE L'ACTION
+    await logAction(req.user.id, "CREATE_PATIENT", `Création patient ${first_name} ${last_name}`, result.rows[0].id);
+
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
@@ -69,7 +74,7 @@ router.get("/:id", isAuthenticated, hasPermission('view_patients'), async (req, 
   }
 });
 
-// Mise à jour (Support Upload Base64)
+// Mise à jour (Support Upload Base64) + LOGS
 router.put("/:id", isAuthenticated, hasPermission('create_patients'), upload.single('photo'), async (req, res) => {
   try {
     const { first_name, last_name, date_of_birth, gender, phone, insurance_number, chronic_conditions } = req.body;
@@ -91,6 +96,10 @@ router.put("/:id", isAuthenticated, hasPermission('create_patients'), upload.sin
     params.push(req.params.id);
 
     await pool.query(query, params);
+
+    // LOG DE L'ACTION
+    await logAction(req.user.id, "UPDATE_PATIENT", `Mise à jour patient ${first_name} ${last_name}`, req.params.id);
+
     res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -98,7 +107,7 @@ router.put("/:id", isAuthenticated, hasPermission('create_patients'), upload.sin
   }
 });
 
-// Suppression avec Cascade Sécurisée
+// Suppression avec Cascade Sécurisée + LOGS
 router.delete("/:id", isAuthenticated, hasPermission('delete_patients'), async (req, res) => {
   const client = await pool.connect();
   try {
@@ -128,6 +137,10 @@ router.delete("/:id", isAuthenticated, hasPermission('delete_patients'), async (
 
     await client.query("DELETE FROM patients WHERE id = $1", [req.params.id]);
     await client.query('COMMIT');
+
+    // LOG DE L'ACTION
+    await logAction(req.user.id, "DELETE_PATIENT", `Suppression patient ID ${req.params.id}`, req.params.id);
+
     res.json({ success: true });
 
   } catch (err) {
