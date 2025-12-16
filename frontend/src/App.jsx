@@ -283,13 +283,13 @@ function Layout({ children }) {
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={e => setProfileForm({...profileForm, profile_picture: e.target.files[0]})} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                 <InputField label="Prénom" value={profileForm.first_name} onChange={e => setProfileForm({...profileForm, first_name: e.target.value})} required />
-                 <InputField label="Nom" value={profileForm.last_name} onChange={e => setProfileForm({...profileForm, last_name: e.target.value})} required />
+                 <InputField label="Prénom" value={profileForm.first_name} onChange={e => setProfileForm({...form, first_name: e.target.value})} required />
+                 <InputField label="Nom" value={profileForm.last_name} onChange={e => setProfileForm({...form, last_name: e.target.value})} required />
               </div>
-              <InputField label="Téléphone" value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: e.target.value})} />
+              <InputField label="Téléphone" value={profileForm.phone} onChange={e => setProfileForm({...form, phone: e.target.value})} />
               <div className="border-t pt-3 mt-1">
                  <p className="label mb-2 text-blue-600">Sécurité</p>
-                 <InputField label="Nouveau mot de passe" type="password" placeholder="Laisser vide pour ne pas changer" value={profileForm.password} onChange={e => setProfileForm({...profileForm, password: e.target.value})} />
+                 <InputField label="Nouveau mot de passe" type="password" placeholder="Laisser vide pour ne pas changer" value={profileForm.password} onChange={e => setProfileForm({...form, password: e.target.value})} />
               </div>
               
               <div className="flex gap-3 pt-3">
@@ -906,7 +906,8 @@ function Admin() {
   const [stats, setStats] = useState(null)
   
   const [showUserModal, setShowUserModal] = useState(false)
-  const [userForm, setUserForm] = useState({ id: null, username: "", password: "", first_name: "", last_name: "", badge_number: "", grade_id: "" })
+  // Ajout visible_grade_id
+  const [userForm, setUserForm] = useState({ id: null, username: "", password: "", first_name: "", last_name: "", badge_number: "", grade_id: "", visible_grade_id: "" })
 
   const loadAdminData = () => {
     fetch("/api/admin/stats", { credentials: "include" }).then(r => r.ok ? r.json() : null).then(setStats).catch(() => setStats(null))
@@ -939,8 +940,33 @@ function Admin() {
       else { const d = await res.json(); alert(d.error || "Erreur"); }
   }
 
-  const editUser = (u) => { setUserForm({ id: u.id, username: u.username, password: "", first_name: u.first_name, last_name: u.last_name, badge_number: u.badge_number, grade_id: u.grade_id }); setShowUserModal(true); }
-  const newUser = () => { setUserForm({ id: null, username: "", password: "", first_name: "", last_name: "", badge_number: "", grade_id: "" }); setShowUserModal(true); }
+  const editUser = (u) => { 
+      setUserForm({ 
+          id: u.id, 
+          username: u.username, 
+          password: "", 
+          first_name: u.first_name, 
+          last_name: u.last_name, 
+          badge_number: u.badge_number, 
+          grade_id: u.grade_id,
+          visible_grade_id: u.visible_grade_id || "" // Ajout
+      }); 
+      setShowUserModal(true); 
+  }
+  
+  const newUser = () => { 
+      setUserForm({ 
+          id: null, 
+          username: "", 
+          password: "", 
+          first_name: "", 
+          last_name: "", 
+          badge_number: "", 
+          grade_id: "",
+          visible_grade_id: "" // Ajout
+      }); 
+      setShowUserModal(true); 
+  }
 
   if (!isAdmin) return <Navigate to="/dashboard" />
 
@@ -977,7 +1003,7 @@ function Admin() {
              <button onClick={newUser} className="btn-primary"><UserPlus size={18} className="mr-2" /> Créer</button>
           </div>
           <table className="w-full">
-            <thead><tr><th className="table-header">Utilisateur</th><th className="table-header">Badge</th><th className="table-header">Grade</th><th className="table-header">Actions</th></tr></thead>
+            <thead><tr><th className="table-header">Utilisateur</th><th className="table-header">Badge</th><th className="table-header">Grade (Réel)</th><th className="table-header">Actions</th></tr></thead>
             <tbody>
                {usersList.map(u => (
                  <tr key={u.id} className="table-row">
@@ -986,7 +1012,11 @@ function Admin() {
                       <div className="text-xs text-slate-400 font-mono">@{u.username}</div>
                    </td>
                    <td className="table-cell text-slate-600 font-mono text-sm font-semibold">{u.badge_number}</td>
-                   <td className="table-cell"><span className="badge" style={{ backgroundColor: u.grade_color + '25', color: u.grade_color, borderColor: u.grade_color }}>{u.grade_name || "—"}</span></td>
+                   <td className="table-cell">
+                       <span className="badge" style={{ backgroundColor: u.grade_color + '25', color: u.grade_color, borderColor: u.grade_color }}>{u.grade_name || "—"}</span>
+                       {/* Indication visuelle si grade caché */}
+                       {u.visible_grade_id && <span className="ml-2 text-xs text-slate-400 italic">(Masqué)</span>}
+                   </td>
                    <td className="table-cell">
                      <div className="flex items-center gap-1">
                        <button onClick={() => editUser(u)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition-colors"><Edit2 size={16}/></button>
@@ -1058,10 +1088,21 @@ function Admin() {
                     <InputField label="Matricule" value={userForm.badge_number} onChange={e => setUserForm({...userForm, badge_number: e.target.value})} />
                  </div>
                  <InputField label="Mot de passe" type="password" placeholder={userForm.id ? "Laisser vide si inchangé" : ""} value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} required={!userForm.id} />
-                 <SelectField label="Grade" value={userForm.grade_id} onChange={e => setUserForm({...userForm, grade_id: e.target.value})} required>
+                 
+                 <SelectField label="Grade (Permissions)" value={userForm.grade_id} onChange={e => setUserForm({...userForm, grade_id: e.target.value})} required>
                     <option value="">-- Sélectionner --</option>
                     {grades.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                  </SelectField>
+
+                 <div className="border-t pt-3 mt-1">
+                     <p className="label text-blue-600 mb-2">Options Avancées (RP)</p>
+                     <SelectField label="Grade Visible (Masquer le vrai grade)" value={userForm.visible_grade_id} onChange={e => setUserForm({...userForm, visible_grade_id: e.target.value})}>
+                        <option value="">-- Aucun (Afficher le vrai grade) --</option>
+                        {grades.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                     </SelectField>
+                     <p className="text-xs text-slate-500 mt-1">Si sélectionné, ce grade sera affiché partout à la place du grade réel. Les permissions restent celles du grade réel.</p>
+                 </div>
+
                  <div className="flex gap-3 pt-3">
                     <button type="button" onClick={() => setShowUserModal(false)} className="btn-secondary flex-1">Annuler</button>
                     <button type="submit" className="btn-primary flex-1">Enregistrer</button>
