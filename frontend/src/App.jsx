@@ -1393,7 +1393,7 @@ function Landing() {
             <button onClick={() => navigate('/book')} className="btn-secondary px-8 py-3 text-base">Prendre RDV</button>
           </div>
        </div>
-       <p className="absolute bottom-6 text-slate-400 text-sm font-medium">© 2024 MRSA · Tous droits réservés</p>
+       <p className="absolute bottom-6 text-slate-400 text-sm font-medium">© Propriété fictive — Usage RP</p>
     </div>
   )
 }
