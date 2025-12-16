@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../config/database");
 const { isAuthenticated, hasPermission } = require("../middleware/auth");
+const logAction = require("../utils/logger");
 
 // Récupérer les rapports
 router.get("/", isAuthenticated, hasPermission('create_reports'), async (req, res) => {
@@ -33,7 +34,7 @@ router.get("/", isAuthenticated, hasPermission('create_reports'), async (req, re
   }
 });
 
-// Créer un nouveau rapport
+// Créer + LOG
 router.post("/", isAuthenticated, hasPermission('create_reports'), async (req, res) => {
   try {
     const { patient_id, disease, context_notes, medications, total_cost } = req.body;
@@ -42,7 +43,6 @@ router.post("/", isAuthenticated, hasPermission('create_reports'), async (req, r
       return res.status(400).json({ error: "Patient et Maladie requis" });
     }
 
-    // On stocke la liste des soins formatée + le prix total dans 'treatment' ou 'medications_given'
     const medsString = Array.isArray(medications) ? medications.join(", ") : medications;
     const finalTreatment = total_cost ? `Coût Total: ${total_cost}$` : "Non facturé";
 
@@ -54,6 +54,8 @@ router.post("/", isAuthenticated, hasPermission('create_reports'), async (req, r
       [patient_id, req.user.id, disease, context_notes, medsString, finalTreatment]
     );
     
+    await logAction(req.user.id, "CREATE_REPORT", `Rapport créé pour patient ID ${patient_id}`, result.rows[0].id);
+
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
@@ -61,10 +63,11 @@ router.post("/", isAuthenticated, hasPermission('create_reports'), async (req, r
   }
 });
 
-// Supprimer un rapport
+// Supprimer + LOG
 router.delete("/:id", isAuthenticated, hasPermission('delete_reports'), async (req, res) => {
   try {
     await pool.query("DELETE FROM medical_reports WHERE id = $1", [req.params.id]);
+    await logAction(req.user.id, "DELETE_REPORT", `Suppression rapport ID ${req.params.id}`, req.params.id);
     res.json({ success: true });
   } catch (err) {
     console.error(err);
