@@ -73,7 +73,9 @@ router.put("/me", isAuthenticated, upload.single('profile_picture'), async (req,
     // Ajout de l'ID à la fin
     params.push(req.user.id);
 
-    const query = `UPDATE users SET ${fields.join(", ")} WHERE id=$${paramIndex - 1}`;
+    // CORRECTION ICI : Utilisation de paramIndex directement au lieu de paramIndex - 1
+    // paramIndex correspond bien au numéro du paramètre de l'ID qu'on vient d'ajouter
+    const query = `UPDATE users SET ${fields.join(", ")} WHERE id=$${paramIndex}`;
 
     await pool.query(query, params);
     
