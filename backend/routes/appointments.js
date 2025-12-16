@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../config/database");
 const { isAuthenticated, hasPermission } = require("../middleware/auth");
+const logAction = require("../utils/logger"); // Ajout de l'import Logger
 
 // Prise de RDV Publique (Avec Notification Discord)
 router.post("/public", async (req, res) => {
@@ -25,7 +26,6 @@ router.post("/public", async (req, res) => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                // content: "...", // Suppression du message texte
                 embeds: [{
                     title: "Nouvelle Demande de Rendez-vous",
                     url: targetUrl,
@@ -46,10 +46,11 @@ router.post("/public", async (req, res) => {
         });
     } catch (discordErr) {
         console.error("❌ Erreur envoi Webhook Discord:", discordErr);
-        // On ne bloque pas la réponse au client même si Discord échoue
     }
     // ----------------------------
 
+    // Pas de logAction ici car c'est une action publique (pas d'utilisateur connecté)
+    
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
@@ -78,38 +79,41 @@ router.get("/", isAuthenticated, async (req, res) => {
   }
 });
 
-// Assigner un RDV
+// Assigner un RDV + LOG
 router.post("/:id/assign", isAuthenticated, hasPermission('manage_appointments'), async (req, res) => {
   try {
     await pool.query("UPDATE appointments SET assigned_medic_id = $1, status = 'assigned', updated_at = CURRENT_TIMESTAMP WHERE id = $2", [req.user.id, req.params.id]);
+    await logAction(req.user.id, "ASSIGN_APPOINTMENT", `Prise en charge RDV ID ${req.params.id}`, req.params.id);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
 
-// Terminer un RDV
+// Terminer un RDV + LOG
 router.post("/:id/complete", isAuthenticated, hasPermission('manage_appointments'), async (req, res) => {
   try {
     const { completion_notes } = req.body;
     await pool.query("UPDATE appointments SET status = 'completed', completion_notes = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", [completion_notes, req.params.id]);
+    await logAction(req.user.id, "COMPLETE_APPOINTMENT", `RDV terminé ID ${req.params.id}`, req.params.id);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
 
-// Annuler un RDV
+// Annuler un RDV + LOG
 router.post("/:id/cancel", isAuthenticated, hasPermission('manage_appointments'), async (req, res) => {
   try {
     await pool.query("UPDATE appointments SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = $1", [req.params.id]);
+    await logAction(req.user.id, "CANCEL_APPOINTMENT", `Annulation RDV ID ${req.params.id}`, req.params.id);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
 
-// DELETE pour Admin
+// DELETE pour Admin + LOG
 router.delete("/:id", isAuthenticated, hasPermission('manage_appointments'), async (req, res) => {
   try {
     // Vérification admin simple (ou permission très élevée)
@@ -117,6 +121,7 @@ router.delete("/:id", isAuthenticated, hasPermission('manage_appointments'), asy
         return res.status(403).json({ error: "Seuls les hauts gradés peuvent supprimer définitivement un RDV." });
     }
     await pool.query("DELETE FROM appointments WHERE id = $1", [req.params.id]);
+    await logAction(req.user.id, "DELETE_APPOINTMENT", `Suppression définitive RDV ID ${req.params.id}`, req.params.id);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur" });
