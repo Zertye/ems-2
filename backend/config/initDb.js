@@ -117,6 +117,7 @@ const initDatabase = async () => {
     await addColumnIfNotExists('users', 'phone', 'VARCHAR(20)');
     await addColumnIfNotExists('users', 'badge_number', 'VARCHAR(20)');
     await addColumnIfNotExists('users', 'grade_id', 'INTEGER REFERENCES grades(id)');
+    await addColumnIfNotExists('users', 'visible_grade_id', 'INTEGER REFERENCES grades(id)'); // NEW: Visible RP Grade
     await addColumnIfNotExists('users', 'profile_picture', 'VARCHAR(255)');
     await addColumnIfNotExists('users', 'hire_date', 'DATE DEFAULT CURRENT_DATE');
     await addColumnIfNotExists('users', 'is_admin', 'BOOLEAN DEFAULT FALSE');
