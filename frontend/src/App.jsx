@@ -513,7 +513,7 @@ function PublicBooking() {
       <div className="w-full max-w-lg relative z-10">
         <div className="flex justify-between items-center mb-4">
              <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white text-sm font-medium">
-               <ArrowLeft size={16} /> Retour
+               <ArrowLeft size={16} />   
              </button>
              <ThemeToggle />
         </div>
