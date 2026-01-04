@@ -23,11 +23,8 @@ app.use(cors({
   origin: IS_PROD ? process.env.PUBLIC_URL : true, 
   credentials: true 
 }));
-// Augmentation de la limite JSON au cas où une image passerait en JSON (rare mais possible)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Note : On ne sert plus "/uploads" car les images sont maintenant en Base64 dans la DB
 
 // Database & Auth Setup
 const startServer = async () => {
@@ -35,6 +32,7 @@ const startServer = async () => {
     const pool = require("./config/database");
     const passport = require("./config/passport");
     const initDatabase = require("./config/initDb");
+    const { extractUser } = require("./middleware/auth");
 
     // Routes imports
     const authRoutes = require("./routes/auth");
@@ -49,7 +47,7 @@ const startServer = async () => {
     await initDatabase();
     console.log("✅ Base de données connectée et initialisée.");
 
-    // Session Setup
+    // Session Setup (pour les navigateurs qui supportent les cookies)
     app.use(session({
       store: new PgSession({ 
         pool: pool, 
@@ -59,9 +57,9 @@ const startServer = async () => {
       secret: process.env.SESSION_SECRET || "ems-secret-key-change-me",
       resave: false,
       saveUninitialized: false,
-      proxy: true, // Important pour Railway/Nginx
+      proxy: true,
       cookie: { 
-        secure: IS_PROD, // Secure en prod (HTTPS)
+        secure: IS_PROD,
         httpOnly: true, 
         maxAge: 7 * 24 * 60 * 60 * 1000,
         sameSite: 'lax'
@@ -70,6 +68,10 @@ const startServer = async () => {
 
     app.use(passport.initialize());
     app.use(passport.session());
+
+    // IMPORTANT: Middleware pour extraire l'user depuis JWT ou Session
+    // Doit être AVANT les routes API
+    app.use("/api", extractUser);
 
     // API Routes
     app.use("/api/auth", authRoutes);
@@ -89,7 +91,6 @@ const startServer = async () => {
     if (fs.existsSync(distPath)) {
       app.use(express.static(distPath));
       
-      // Catch-all pour React Router
       app.get("*", (req, res) => {
         if (fs.existsSync(indexPath)) {
           res.sendFile(indexPath);
