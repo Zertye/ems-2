@@ -495,7 +495,8 @@ function Patients() {
     if (!hasPerm('view_patients')) return
     fetch(`/api/patients?search=${search}`, { credentials: "include" })
       .then(r => r.json())
-      .then(d => setPatients(d.patients || []))
+      .then(d => setPatients(Array.isArray(d?.patients) ? d.patients : []))
+      .catch(() => setPatients([]))
   }
 
   useEffect(() => { load() }, [search])
@@ -681,7 +682,8 @@ function Appointments() {
   const load = () => {
     fetch("/api/appointments", { credentials: "include" })
       .then(r => r.json())
-      .then(setAppointments)
+      .then(data => setAppointments(Array.isArray(data) ? data : []))
+      .catch(() => setAppointments([]))
   }
 
   useEffect(() => { load() }, [])
@@ -704,7 +706,7 @@ function Appointments() {
       }
   }
 
-  const filtered = appointments.filter(a => {
+  const filtered = (appointments || []).filter(a => {
     if (filter === "pending") return a.status === "pending"
     if (filter === "my") return a.assigned_medic_id === user.id
     return true
@@ -812,9 +814,18 @@ function Reports() {
   const loadData = async () => {
     let url = "/api/reports"
     if (filterPatientId) url += `?patient_id=${filterPatientId}`
-    fetch(url, { credentials: "include" }).then(r => r.json()).then(setReports)
-    fetch("/api/patients", { credentials: "include" }).then(r => r.json()).then(d => setPatients(d.patients || []))
-    fetch("/api/reports/diseases", { credentials: "include" }).then(r => r.json()).then(setDiseases)
+    fetch(url, { credentials: "include" })
+      .then(r => r.json())
+      .then(data => setReports(Array.isArray(data) ? data : []))
+      .catch(() => setReports([]))
+    fetch("/api/patients", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setPatients(Array.isArray(d?.patients) ? d.patients : []))
+      .catch(() => setPatients([]))
+    fetch("/api/reports/diseases", { credentials: "include" })
+      .then(r => r.json())
+      .then(data => setDiseases(Array.isArray(data) ? data : []))
+      .catch(() => setDiseases([]))
   }
 
   useEffect(() => { loadData() }, [filterPatientId])
@@ -966,9 +977,18 @@ function Admin() {
   const [userForm, setUserForm] = useState({ id: null, username: "", password: "", first_name: "", last_name: "", badge_number: "", grade_id: "", visible_grade_id: "" })
 
   const loadAdminData = () => {
-    fetch("/api/admin/stats", { credentials: "include" }).then(r => r.ok ? r.json() : null).then(setStats).catch(() => setStats(null))
-    fetch("/api/admin/users", { credentials: "include" }).then(r => r.json()).then(setUsersList)
-    fetch("/api/admin/grades", { credentials: "include" }).then(r => r.json()).then(setGrades)
+    fetch("/api/admin/stats", { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(setStats)
+      .catch(() => setStats(null))
+    fetch("/api/admin/users", { credentials: "include" })
+      .then(r => r.json())
+      .then(data => setUsersList(Array.isArray(data) ? data : []))
+      .catch(() => setUsersList([]))
+    fetch("/api/admin/grades", { credentials: "include" })
+      .then(r => r.json())
+      .then(data => setGrades(Array.isArray(data) ? data : []))
+      .catch(() => setGrades([]))
   }
 
   const loadLogs = async () => {
@@ -977,10 +997,13 @@ function Admin() {
       const res = await fetch(`/api/admin/logs?limit=${logsLimit}`, { credentials: "include" })
       if (res.ok) {
         const data = await res.json()
-        setLogs(data)
+        setLogs(Array.isArray(data) ? data : [])
+      } else {
+        setLogs([])
       }
     } catch (err) {
       console.error("Erreur chargement logs:", err)
+      setLogs([])
     }
     setLogsLoading(false)
   }
@@ -991,10 +1014,13 @@ function Admin() {
       const res = await fetch("/api/admin/performance", { credentials: "include" })
       if (res.ok) {
         const data = await res.json()
-        setPerformance(data)
+        setPerformance(Array.isArray(data) ? data : [])
+      } else {
+        setPerformance([])
       }
     } catch (err) {
       console.error("Erreur chargement performance:", err)
+      setPerformance([])
     }
     setPerformanceLoading(false)
   }
@@ -1216,7 +1242,7 @@ function Admin() {
             </div>
 
             {/* Distribution des grades */}
-            {stats?.gradeDistribution && stats.gradeDistribution.length > 0 && (
+            {stats?.gradeDistribution && Array.isArray(stats.gradeDistribution) && stats.gradeDistribution.length > 0 && (
               <div className="card p-5">
                 <h3 className="font-bold text-lg text-slate-800 dark:text-white mb-4">Répartition par grade</h3>
                 <div className="space-y-3">
@@ -1460,7 +1486,10 @@ function Diagnosis() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    fetch("/api/diagnosis/symptoms", { credentials: "include" }).then(r => r.json()).then(setSymptoms)
+    fetch("/api/diagnosis/symptoms", { credentials: "include" })
+      .then(r => r.json())
+      .then(data => setSymptoms(Array.isArray(data) ? data : []))
+      .catch(() => setSymptoms([]))
   }, [])
 
   const handleAnalyze = async (e) => {
@@ -1515,7 +1544,7 @@ function Diagnosis() {
                 <p className="text-slate-600 dark:text-slate-300 mb-5">{result.message}</p>
                 
                 <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
-                   {result.results.map((r, i) => (
+                   {(result.results || []).map((r, i) => (
                       <div key={i} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border dark:border-slate-700">
                          <div className="flex justify-between items-center mb-3">
                             <span className="font-bold text-slate-800 dark:text-white text-lg">{r.name}</span>
@@ -1664,7 +1693,7 @@ function Dashboard() {
             </div>
             <div className="space-y-3">
                 {myStats?.recent_activity?.length > 0 ? (
-                    myStats.recent_activity.map(r => (
+                    (myStats.recent_activity || []).map(r => (
                         <div key={r.id} className="card p-4 flex flex-col gap-1 text-sm border-l-4 border-blue-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-default">
                             <div className="font-bold text-slate-800 dark:text-white text-base">{r.first_name} {r.last_name}</div>
                             <div className="text-slate-500 font-medium">{r.diagnosis}</div>
@@ -1688,10 +1717,15 @@ function Dashboard() {
 function Roster() {
   const [members, setMembers] = useState([])
 
-  useEffect(() => { fetch("/api/users/roster", { credentials: "include" }).then(r => r.json()).then(setMembers) }, [])
+  useEffect(() => { 
+    fetch("/api/users/roster", { credentials: "include" })
+      .then(r => r.json())
+      .then(data => setMembers(Array.isArray(data) ? data : []))
+      .catch(() => setMembers([]))
+  }, [])
 
   // --- LOGIQUE HIERARCHIQUE ---
-  const grouped = members.reduce((acc, m) => {
+  const grouped = (members || []).reduce((acc, m) => {
       const cat = m.grade_category || "Autres";
       if(!acc[cat]) acc[cat] = [];
       acc[cat].push(m);
