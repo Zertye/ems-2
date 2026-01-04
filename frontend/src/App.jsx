@@ -62,13 +62,13 @@ function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   const fetchUser = () => {
-    fetch("/api/auth/me", { credentials: "include" })
+    return fetch("/api/auth/me", { credentials: "include" })
       .then(r => {
         if (r.ok) return r.json();
         throw new Error("Not logged in");
       })
-      .then(d => { setUser(d.user); setLoading(false) })
-      .catch(() => { setUser(null); setLoading(false) })
+      .then(d => { setUser(d.user); setLoading(false); return d.user; })
+      .catch(() => { setUser(null); setLoading(false); return null; })
   }
 
   useEffect(() => { fetchUser() }, [])
@@ -83,7 +83,8 @@ function AuthProvider({ children }) {
       });
       const data = await res.json();
       if (data.success) {
-        setUser(data.user);
+        // Re-fetch les infos complètes avec les permissions du grade
+        await fetchUser();
         return { success: true };
       } else {
         return { success: false, error: data.error || "Identifiants incorrects" };
