@@ -53,113 +53,130 @@ function ThemeToggle() {
   )
 }
 
-// --- Auth Context ---
+// --- Auth Context avec JWT ---
 const AuthContext = createContext(null)
 export function useAuth() { return useContext(AuthContext) }
+
+// Helper pour les requêtes API avec token JWT
+const TOKEN_KEY = "mrsa_auth_token";
+
+export const apiFetch = async (url, options = {}) => {
+  const token = localStorage.getItem(TOKEN_KEY);
+  
+  const headers = {
+    ...options.headers,
+  };
+  
+  // Ajouter le token si présent
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  
+  // Ajouter Content-Type pour JSON si body présent et pas de FormData
+  if (options.body && !(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  const response = await fetch(url, {
+    ...options,
+    headers,
+    credentials: "include" // Garde les cookies pour compatibilité
+  });
+  
+  return response;
+};
 
 function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  const fetchUser = () => {
-    return fetch("/api/auth/me", { credentials: "include" })
-      .then(r => {
-        if (r.ok) return r.json();
-        throw new Error("Not logged in");
-      })
-      .then(d => { setUser(d.user); setLoading(false); return d.user; })
-      .catch(() => { setUser(null); setLoading(false); return null; })
+  // Fonction async pour récupérer l'utilisateur depuis le token
+  const fetchUser = async () => {
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return null;
+      }
+      
+      const r = await apiFetch("/api/auth/me");
+      if (r.ok) {
+        const d = await r.json();
+        setUser(d.user);
+        setLoading(false);
+        return d.user;
+      } else {
+        // Token invalide, le supprimer
+        localStorage.removeItem(TOKEN_KEY);
+        setUser(null);
+        setLoading(false);
+        return null;
+      }
+    } catch (e) {
+      console.error("[AUTH] fetchUser error:", e);
+      localStorage.removeItem(TOKEN_KEY);
+      setUser(null);
+      setLoading(false);
+      return null;
+    }
   }
 
   useEffect(() => { fetchUser() }, [])
 
   const login = async (username, password) => {
-    console.log("[AUTH] Début login...")
-    
-    // Fonction timeout universelle
-    const fetchWithTimeout = (url, options, timeout = 15000) => {
-      return Promise.race([
-        fetch(url, options),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('TIMEOUT_15S')), timeout)
-        )
-      ]);
-    };
+    console.log("[AUTH] Début login JWT...")
     
     try {
-      console.log("[AUTH] Envoi requête login...")
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
       
-      let res;
-      try {
-        res = await fetchWithTimeout("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
-          credentials: "include"
-        }, 15000);
-      } catch (fetchErr) {
-        console.error("[AUTH] Erreur fetch:", fetchErr)
-        if (fetchErr.message === 'TIMEOUT_15S') {
-          return { success: false, error: "⏱️ Timeout: Le serveur ne répond pas (15s)" };
-        }
-        return { success: false, error: `🌐 Erreur réseau: ${fetchErr.message || String(fetchErr)}` };
-      }
-      
-      console.log("[AUTH] Status HTTP:", res.status, res.statusText)
+      console.log("[AUTH] Status HTTP:", res.status)
       
       if (!res.ok) {
         let text = "";
         try { text = await res.text(); } catch {}
-        console.error("[AUTH] Réponse erreur:", text)
         try {
           const errData = JSON.parse(text)
           return { success: false, error: errData.error || `Erreur HTTP ${res.status}` }
         } catch {
-          return { success: false, error: `Erreur HTTP ${res.status}: ${text.substring(0, 100)}` }
+          return { success: false, error: `Erreur HTTP ${res.status}` }
         }
       }
       
-      let data;
-      try {
-        data = await res.json();
-      } catch (jsonErr) {
-        console.error("[AUTH] Erreur JSON:", jsonErr)
-        return { success: false, error: `📄 Erreur parsing: ${jsonErr.message}` };
-      }
+      const data = await res.json();
+      console.log("[AUTH] Réponse:", { success: data.success, hasToken: !!data.token, hasUser: !!data.user })
       
-      console.log("[AUTH] Data:", JSON.stringify(data))
-      
-      if (data.success) {
-        console.log("[AUTH] Login OK, fetch user...")
+      if (data.success && data.token) {
+        // Stocker le token JWT dans localStorage
+        localStorage.setItem(TOKEN_KEY, data.token);
+        console.log("[AUTH] ✅ Token JWT stocké")
         
-        // D'abord, on set l'user du login directement (fallback si fetchUser échoue)
+        // Stocker l'user
         if (data.user) {
           setUser(data.user);
           setLoading(false);
-          console.log("[AUTH] User du login setté:", data.user.username)
+          console.log("[AUTH] ✅ User:", data.user.username, "| Grade:", data.user.grade_level)
         }
         
-        // Ensuite on essaye de récupérer l'user complet avec les permissions
-        try {
-          const fullUser = await fetchUser();
-          console.log("[AUTH] fetchUser résultat:", fullUser?.username || "NULL")
-        } catch (e) {
-          console.error("[AUTH] fetchUser fail (cookies non supportés?):", e)
-        }
-        
-        // Retourner le succès avec les infos
         return { success: true, user: data.user };
       } else {
         return { success: false, error: data.error || "Identifiants incorrects" };
       }
     } catch (e) {
       console.error("[AUTH] Exception:", e)
-      return { success: false, error: `❌ ${e.message || String(e)}` };
+      return { success: false, error: `Erreur: ${e.message || String(e)}` };
     }
   }
 
   const logout = async () => {
-    await fetch("/api/auth/logout", { method: "POST", credentials: "include" })
+    localStorage.removeItem(TOKEN_KEY);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {}
     setUser(null)
     window.location.href = "/"
   }
@@ -269,7 +286,7 @@ function Layout({ children }) {
     if (profileForm.profile_picture instanceof File) {
         formData.append("profile_picture", profileForm.profile_picture)
     }
-    await fetch("/api/users/me", { method: "PUT", body: formData })
+    await apiFetch("/api/users/me", { method: "PUT", body: formData })
     await refreshUser()
     setShowProfileModal(false)
   }
@@ -558,7 +575,7 @@ function Patients() {
 
   const load = () => {
     if (!hasPerm('view_patients')) return
-    fetch(`/api/patients?search=${search}`, { credentials: "include" })
+    apiFetch(`/api/patients?search=${search}`)
       .then(r => r.json())
       .then(d => setPatients(Array.isArray(d?.patients) ? d.patients : []))
       .catch(() => setPatients([]))
@@ -581,7 +598,7 @@ function Patients() {
     }
     const url = editingId ? `/api/patients/${editingId}` : "/api/patients"
     const method = editingId ? "PUT" : "POST"
-    await fetch(url, { method, body: formData, credentials: "include" })
+    await apiFetch(url, { method, body: formData })
     setShowModal(false)
     setEditingId(null)
     setForm(initialForm)
@@ -598,7 +615,7 @@ function Patients() {
     if (!force && !window.confirm("Supprimer ce dossier patient ?")) return
     
     const url = force ? `/api/patients/${id}?force=true` : `/api/patients/${id}`;
-    const res = await fetch(url, { method: "DELETE", credentials: "include" })
+    const res = await apiFetch(url, { method: "DELETE" })
     
     if (res.ok) {
         load();
@@ -745,7 +762,7 @@ function Appointments() {
   const [filter, setFilter] = useState("all") 
 
   const load = () => {
-    fetch("/api/appointments", { credentials: "include" })
+    apiFetch("/api/appointments")
       .then(r => r.json())
       .then(data => setAppointments(Array.isArray(data) ? data : []))
       .catch(() => setAppointments([]))
@@ -755,13 +772,12 @@ function Appointments() {
 
   const handleStatus = async (id, action, note = "") => {
     let url = `/api/appointments/${id}/${action}`
-    const opts = { method: action === 'delete' ? 'DELETE' : 'POST', credentials: "include" };
+    const opts = { method: action === 'delete' ? 'DELETE' : 'POST' };
     if (action === "complete") {
-        opts.headers = { "Content-Type": "application/json" };
         opts.body = JSON.stringify({ completion_notes: note });
     }
     if (action === 'delete') url = `/api/appointments/${id}`;
-    await fetch(url, opts)
+    await apiFetch(url, opts)
     load()
   }
   
@@ -879,15 +895,15 @@ function Reports() {
   const loadData = async () => {
     let url = "/api/reports"
     if (filterPatientId) url += `?patient_id=${filterPatientId}`
-    fetch(url, { credentials: "include" })
+    apiFetch(url)
       .then(r => r.json())
       .then(data => setReports(Array.isArray(data) ? data : []))
       .catch(() => setReports([]))
-    fetch("/api/patients", { credentials: "include" })
+    apiFetch("/api/patients")
       .then(r => r.json())
       .then(d => setPatients(Array.isArray(d?.patients) ? d.patients : []))
       .catch(() => setPatients([]))
-    fetch("/api/reports/diseases", { credentials: "include" })
+    apiFetch("/api/reports/diseases")
       .then(r => r.json())
       .then(data => setDiseases(Array.isArray(data) ? data : []))
       .catch(() => setDiseases([]))
@@ -905,11 +921,9 @@ function Reports() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    await fetch("/api/reports", {
+    await apiFetch("/api/reports", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-      credentials: "include"
+      body: JSON.stringify(form)
     })
     setShowModal(false)
     setForm({ patient_id: "", disease: "", context_notes: "", medications: [], total_cost: 0 })
@@ -918,7 +932,7 @@ function Reports() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Supprimer ce rapport ?")) return
-    await fetch(`/api/reports/${id}`, { method: "DELETE", credentials: "include" })
+    await apiFetch(`/api/reports/${id}`, { method: "DELETE" })
     loadData()
   }
 
@@ -1042,15 +1056,15 @@ function Admin() {
   const [userForm, setUserForm] = useState({ id: null, username: "", password: "", first_name: "", last_name: "", badge_number: "", grade_id: "", visible_grade_id: "" })
 
   const loadAdminData = () => {
-    fetch("/api/admin/stats", { credentials: "include" })
+    apiFetch("/api/admin/stats")
       .then(r => r.ok ? r.json() : null)
       .then(setStats)
       .catch(() => setStats(null))
-    fetch("/api/admin/users", { credentials: "include" })
+    apiFetch("/api/admin/users")
       .then(r => r.json())
       .then(data => setUsersList(Array.isArray(data) ? data : []))
       .catch(() => setUsersList([]))
-    fetch("/api/admin/grades", { credentials: "include" })
+    apiFetch("/api/admin/grades")
       .then(r => r.json())
       .then(data => setGrades(Array.isArray(data) ? data : []))
       .catch(() => setGrades([]))
@@ -1059,7 +1073,7 @@ function Admin() {
   const loadLogs = async () => {
     setLogsLoading(true)
     try {
-      const res = await fetch(`/api/admin/logs?limit=${logsLimit}`, { credentials: "include" })
+      const res = await apiFetch(`/api/admin/logs?limit=${logsLimit}`)
       if (res.ok) {
         const data = await res.json()
         setLogs(Array.isArray(data) ? data : [])
@@ -1076,7 +1090,7 @@ function Admin() {
   const loadPerformance = async () => {
     setPerformanceLoading(true)
     try {
-      const res = await fetch("/api/admin/performance", { credentials: "include" })
+      const res = await apiFetch("/api/admin/performance")
       if (res.ok) {
         const data = await res.json()
         setPerformance(Array.isArray(data) ? data : [])
@@ -1108,21 +1122,21 @@ function Admin() {
     const newPerms = { ...grade.permissions, [perm]: !grade.permissions?.[perm] }
     const updatedGrades = grades.map(g => g.id === grade.id ? { ...g, permissions: newPerms } : g)
     setGrades(updatedGrades)
-    await fetch(`/api/admin/grades/${grade.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...grade, permissions: newPerms }), credentials: "include" })
+    await apiFetch(`/api/admin/grades/${grade.id}`, { method: "PUT", body: JSON.stringify({ ...grade, permissions: newPerms }) })
   }
 
   const handleUserSubmit = async (e) => {
     e.preventDefault();
     const url = userForm.id ? `/api/admin/users/${userForm.id}` : "/api/admin/users";
     const method = userForm.id ? "PUT" : "POST";
-    const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(userForm), credentials: "include" });
+    const res = await apiFetch(url, { method, body: JSON.stringify(userForm) });
     if(res.ok) { setShowUserModal(false); loadAdminData(); }
     else alert("Erreur lors de l'enregistrement");
   }
   
   const deleteUser = async (id) => {
       if(!window.confirm("Supprimer définitivement cet utilisateur ?")) return;
-      const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE", credentials: "include" });
+      const res = await apiFetch(`/api/admin/users/${id}`, { method: "DELETE" });
       if(res.ok) loadAdminData();
       else { const d = await res.json(); alert(d.error || "Erreur"); }
   }
@@ -1551,7 +1565,7 @@ function Diagnosis() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    fetch("/api/diagnosis/symptoms", { credentials: "include" })
+    apiFetch("/api/diagnosis/symptoms")
       .then(r => r.json())
       .then(data => setSymptoms(Array.isArray(data) ? data : []))
       .catch(() => setSymptoms([]))
@@ -1560,8 +1574,8 @@ function Diagnosis() {
   const handleAnalyze = async (e) => {
     e.preventDefault()
     setLoading(true)
-    const res = await fetch("/api/diagnosis/analyze", {
-      method: "POST", headers: { "Content-Type": "application/json" },
+    const res = await apiFetch("/api/diagnosis/analyze", {
+      method: "POST",
       body: JSON.stringify({ visibleSymptom: selectedSymptom, vitals })
     })
     setResult(await res.json())
@@ -1651,14 +1665,14 @@ function Dashboard() {
   useEffect(() => {
     // Si Admin, charger les stats globales
     if (isAdmin) {
-        fetch("/api/admin/stats", { credentials: "include" })
+        apiFetch("/api/admin/stats")
             .then(r => r.ok ? r.json() : null)
             .then(setAdminStats)
             .catch(console.error)
     }
 
     // TOUJOURS charger les stats personnelles
-    fetch("/api/users/me/stats", { credentials: "include" })
+    apiFetch("/api/users/me/stats")
         .then(r => r.ok ? r.json() : null)
         .then(setMyStats)
         .catch(console.error)
@@ -1783,7 +1797,7 @@ function Roster() {
   const [members, setMembers] = useState([])
 
   useEffect(() => { 
-    fetch("/api/users/roster", { credentials: "include" })
+    apiFetch("/api/users/roster")
       .then(r => r.json())
       .then(data => setMembers(Array.isArray(data) ? data : []))
       .catch(() => setMembers([]))
