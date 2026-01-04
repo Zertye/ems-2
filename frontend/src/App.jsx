@@ -533,7 +533,7 @@ function PublicBooking() {
               <InputField label="Nom & Prénom" placeholder="Maurice Latoue" value={form.patient_name} onChange={e => setForm({...form, patient_name: e.target.value})} required />
               <InputField label="Téléphone" placeholder="9387 6735" value={form.patient_phone} onChange={e => setForm({...form, patient_phone: e.target.value})} required />
             </div>
-            <InputField label="Discord (pour contact)" placeholder="username#0000" value={form.patient_discord} onChange={e => setForm({...form, patient_discord: e.target.value})} />
+            <InputField label="Discord (pour contact)" placeholder="zertye._" value={form.patient_discord} onChange={e => setForm({...form, patient_discord: e.target.value})} />
             
             <SelectField label="Type de rendez-vous" value={form.appointment_type} onChange={e => setForm({...form, appointment_type: e.target.value})}>
               <option value="Consultation">Consultation Générale</option>
