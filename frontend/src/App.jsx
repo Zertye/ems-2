@@ -75,22 +75,43 @@ function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     try {
+      console.log("[AUTH] Envoi requête login...")
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
         credentials: "include"
       });
+      
+      console.log("[AUTH] Status HTTP:", res.status, res.statusText)
+      
+      // Vérifier si la réponse est OK avant de parser le JSON
+      if (!res.ok) {
+        const text = await res.text()
+        console.error("[AUTH] Réponse erreur:", text)
+        try {
+          const errData = JSON.parse(text)
+          return { success: false, error: errData.error || `Erreur HTTP ${res.status}` }
+        } catch {
+          return { success: false, error: `Erreur HTTP ${res.status}: ${text.substring(0, 100)}` }
+        }
+      }
+      
       const data = await res.json();
+      console.log("[AUTH] Data reçue:", { success: data.success, hasUser: !!data.user })
+      
       if (data.success) {
         // Re-fetch les infos complètes avec les permissions du grade
+        console.log("[AUTH] Login OK, récupération user complet...")
         await fetchUser();
+        console.log("[AUTH] User complet récupéré")
         return { success: true };
       } else {
         return { success: false, error: data.error || "Identifiants incorrects" };
       }
     } catch (e) {
-      return { success: false, error: "Erreur serveur" };
+      console.error("[AUTH] Exception dans login:", e)
+      return { success: false, error: `Erreur réseau: ${e.message || e.toString()}` };
     }
   }
 
@@ -1813,13 +1834,29 @@ function Login() {
   const { user, login } = useAuth()
   const [form, setForm] = useState({ username: "", password: "" })
   const [error, setError] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
   
   if (user) return <Navigate to="/dashboard" />
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const res = await login(form.username, form.password)
-    if(!res.success) setError(res.error)
+    setError(null)
+    setIsLoading(true)
+    
+    try {
+      console.log("[LOGIN] Tentative de connexion pour:", form.username)
+      const res = await login(form.username, form.password)
+      console.log("[LOGIN] Résultat:", res)
+      
+      if(!res.success) {
+        setError(res.error || "Erreur inconnue")
+      }
+    } catch (err) {
+      console.error("[LOGIN] Exception:", err)
+      setError(`Exception: ${err.message || err.toString()}`)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -1838,11 +1875,25 @@ function Login() {
           </div>
           
           <div className="card p-6">
-            {error && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-3 rounded-lg mb-4 text-sm text-center font-medium">{error}</div>}
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-3 rounded-lg mb-4 text-sm font-medium max-h-32 overflow-y-auto">
+                <p className="font-bold mb-1">❌ Erreur de connexion</p>
+                <p className="break-words whitespace-pre-wrap">{error}</p>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
-               <InputField label="Identifiant" placeholder="nom.prenom" value={form.username} onChange={e => setForm({...form, username: e.target.value})} />
-               <InputField label="Mot de passe" type="password" placeholder="••••••••" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
-               <button type="submit" className="btn-primary w-full py-3 text-base">Se connecter</button>
+               <InputField label="Identifiant" placeholder="nom.prenom" value={form.username} onChange={e => setForm({...form, username: e.target.value})} disabled={isLoading} />
+               <InputField label="Mot de passe" type="password" placeholder="••••••••" value={form.password} onChange={e => setForm({...form, password: e.target.value})} disabled={isLoading} />
+               <button type="submit" disabled={isLoading} className="btn-primary w-full py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                 {isLoading ? (
+                   <>
+                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                     Connexion en cours...
+                   </>
+                 ) : (
+                   "Se connecter"
+                 )}
+               </button>
             </form>
           </div>
           
