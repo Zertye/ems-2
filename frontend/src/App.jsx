@@ -530,8 +530,8 @@ function PublicBooking() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-3">
-              <InputField label="Nom & Prénom" placeholder="Jean Dupont" value={form.patient_name} onChange={e => setForm({...form, patient_name: e.target.value})} required />
-              <InputField label="Téléphone" placeholder="06 12 34 56 78" value={form.patient_phone} onChange={e => setForm({...form, patient_phone: e.target.value})} required />
+              <InputField label="Nom & Prénom" placeholder="Maurice Latoue" value={form.patient_name} onChange={e => setForm({...form, patient_name: e.target.value})} required />
+              <InputField label="Téléphone" placeholder=9837-2398" value={form.patient_phone} onChange={e => setForm({...form, patient_phone: e.target.value})} required />
             </div>
             <InputField label="Discord (pour contact)" placeholder="username#0000" value={form.patient_discord} onChange={e => setForm({...form, patient_discord: e.target.value})} />
             
