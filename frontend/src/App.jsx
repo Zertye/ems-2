@@ -74,20 +74,42 @@ function AuthProvider({ children }) {
   useEffect(() => { fetchUser() }, [])
 
   const login = async (username, password) => {
+    console.log("[AUTH] Début login...")
+    
+    // Fonction timeout universelle
+    const fetchWithTimeout = (url, options, timeout = 15000) => {
+      return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('TIMEOUT_15S')), timeout)
+        )
+      ]);
+    };
+    
     try {
       console.log("[AUTH] Envoi requête login...")
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-        credentials: "include"
-      });
+      
+      let res;
+      try {
+        res = await fetchWithTimeout("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+          credentials: "include"
+        }, 15000);
+      } catch (fetchErr) {
+        console.error("[AUTH] Erreur fetch:", fetchErr)
+        if (fetchErr.message === 'TIMEOUT_15S') {
+          return { success: false, error: "⏱️ Timeout: Le serveur ne répond pas (15s)" };
+        }
+        return { success: false, error: `🌐 Erreur réseau: ${fetchErr.message || String(fetchErr)}` };
+      }
       
       console.log("[AUTH] Status HTTP:", res.status, res.statusText)
       
-      // Vérifier si la réponse est OK avant de parser le JSON
       if (!res.ok) {
-        const text = await res.text()
+        let text = "";
+        try { text = await res.text(); } catch {}
         console.error("[AUTH] Réponse erreur:", text)
         try {
           const errData = JSON.parse(text)
@@ -97,21 +119,42 @@ function AuthProvider({ children }) {
         }
       }
       
-      const data = await res.json();
-      console.log("[AUTH] Data reçue:", { success: data.success, hasUser: !!data.user })
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        console.error("[AUTH] Erreur JSON:", jsonErr)
+        return { success: false, error: `📄 Erreur parsing: ${jsonErr.message}` };
+      }
+      
+      console.log("[AUTH] Data:", JSON.stringify(data))
       
       if (data.success) {
-        // Re-fetch les infos complètes avec les permissions du grade
-        console.log("[AUTH] Login OK, récupération user complet...")
-        await fetchUser();
-        console.log("[AUTH] User complet récupéré")
-        return { success: true };
+        console.log("[AUTH] Login OK, fetch user...")
+        
+        // D'abord, on set l'user du login directement (fallback si fetchUser échoue)
+        if (data.user) {
+          setUser(data.user);
+          setLoading(false);
+          console.log("[AUTH] User du login setté:", data.user.username)
+        }
+        
+        // Ensuite on essaye de récupérer l'user complet avec les permissions
+        try {
+          const fullUser = await fetchUser();
+          console.log("[AUTH] fetchUser résultat:", fullUser?.username || "NULL")
+        } catch (e) {
+          console.error("[AUTH] fetchUser fail (cookies non supportés?):", e)
+        }
+        
+        // Retourner le succès avec les infos
+        return { success: true, user: data.user };
       } else {
         return { success: false, error: data.error || "Identifiants incorrects" };
       }
     } catch (e) {
-      console.error("[AUTH] Exception dans login:", e)
-      return { success: false, error: `Erreur réseau: ${e.message || e.toString()}` };
+      console.error("[AUTH] Exception:", e)
+      return { success: false, error: `❌ ${e.message || String(e)}` };
     }
   }
 
@@ -1835,6 +1878,36 @@ function Login() {
   const [form, setForm] = useState({ username: "", password: "" })
   const [error, setError] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [status, setStatus] = useState("") // Pour afficher l'étape en cours
+  const [debugInfo, setDebugInfo] = useState("")
+  
+  // Test des capacités du navigateur au chargement
+  useEffect(() => {
+    const tests = []
+    
+    // Test cookies
+    try {
+      document.cookie = "testcookie=1"
+      const hasCookies = document.cookie.includes("testcookie")
+      tests.push(`Cookies: ${hasCookies ? '✅' : '❌'}`)
+    } catch (e) {
+      tests.push(`Cookies: ❌ (${e.message})`)
+    }
+    
+    // Test localStorage
+    try {
+      localStorage.setItem('test', '1')
+      localStorage.removeItem('test')
+      tests.push('localStorage: ✅')
+    } catch (e) {
+      tests.push(`localStorage: ❌`)
+    }
+    
+    // Test fetch
+    tests.push(`fetch: ${typeof fetch === 'function' ? '✅' : '❌'}`)
+    
+    setDebugInfo(tests.join(' | '))
+  }, [])
   
   if (user) return <Navigate to="/dashboard" />
 
@@ -1842,21 +1915,31 @@ function Login() {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
+    setStatus("Connexion au serveur...")
     
     try {
       console.log("[LOGIN] Tentative de connexion pour:", form.username)
       const res = await login(form.username, form.password)
       console.log("[LOGIN] Résultat:", res)
       
-      if(!res.success) {
+      if(res.success) {
+        setStatus("✅ Connecté ! Redirection...")
+        // Forcer la redirection avec window.location (plus compatible que Navigate)
+        setTimeout(() => {
+          window.location.href = "/dashboard"
+        }, 500)
+      } else {
         setError(res.error || "Erreur inconnue")
+        setStatus("")
+        setIsLoading(false)
       }
     } catch (err) {
       console.error("[LOGIN] Exception:", err)
-      setError(`Exception: ${err.message || err.toString()}`)
-    } finally {
+      setError(`Exception: ${err.message || String(err)}`)
+      setStatus("")
       setIsLoading(false)
     }
+    // Note: on ne met pas finally car si succès, on redirige
   }
 
   return (
@@ -1888,13 +1971,23 @@ function Login() {
                  {isLoading ? (
                    <>
                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                     Connexion en cours...
+                     {status || "Chargement..."}
                    </>
                  ) : (
                    "Se connecter"
                  )}
                </button>
+               {isLoading && (
+                 <p className="text-center text-xs text-slate-400 mt-2">
+                   Si ça prend plus de 15s, une erreur s'affichera
+                 </p>
+               )}
             </form>
+            
+            {/* Debug info pour diagnostiquer les problèmes */}
+            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <p className="text-xs text-slate-400 text-center font-mono">{debugInfo}</p>
+            </div>
           </div>
           
           <p className="text-center text-slate-400 text-sm mt-6 font-medium">
