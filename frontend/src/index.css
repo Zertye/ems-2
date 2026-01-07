@@ -181,14 +181,15 @@
     background: var(--accent-light);
     color: var(--accent-primary);
   }
-  /* On garde badge-blue si tu as besoin d'un bleu spécifique ailleurs, sinon il peut être supprimé */
+  
+  /* MODIFICATION: Badge Blue redirigé vers le rouge pour cohérence */
   .badge-blue {
-    background: #dbeafe;
-    color: #1d4ed8;
+    background: var(--accent-light);
+    color: var(--accent-primary);
   }
   .dark .badge-blue {
-    background: rgba(59, 130, 246, 0.2);
-    color: #3b82f6;
+    background: var(--accent-light); /* Utilise la variable dark définie plus haut */
+    color: var(--accent-primary);
   }
   
   .badge-green {
