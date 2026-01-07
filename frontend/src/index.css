@@ -19,40 +19,46 @@
   --text-muted: #64748b;
   --text-sidebar: #cbd5e1;
   
-  /* CHANGEMENT ICI: Le bleu devient rouge */
-  --accent-primary: #dc2626;      /* Rouge vif (Red-600) */
-  --accent-primary-hover: #b91c1c; /* Rouge plus foncé (Red-700) */
-  --accent-light: #fee2e2;        /* Rouge très clair (Red-100) */
+  /* --- THÈME PRINCIPAL (ROUGE) --- */
+  /* Rouge "Royal" pour le light mode, lisible sur fond blanc */
+  --accent-primary: #dc2626;      
+  --accent-primary-hover: #b91c1c; 
+  /* Fond très léger rouge pour les badges/fonds subtils */
+  --accent-light: #fef2f2;        
   
+  /* Autres couleurs (inchangées sauf si conflit) */
   --accent-success: #059669;
   --accent-success-light: #d1fae5;
   
   --accent-warning: #d97706;
   --accent-warning-light: #fef3c7;
   
-  --accent-danger: #dc2626;
+  /* Le danger reste rouge, mais peut être légèrement différent ou identique au primaire */
+  --accent-danger: #ef4444; 
   --accent-danger-light: #fee2e2;
 }
 
 /* Mode Sombre (Override des variables) */
 .dark {
-  --bg-page: #0f172a; /* Fond très sombre */
-  --bg-card: #1e293b; /* Cartes gris foncé */
-  --bg-sidebar: #020617; /* Sidebar encore plus sombre */
+  --bg-page: #0f172a; 
+  --bg-card: #1e293b; 
+  --bg-sidebar: #020617; 
   --bg-sidebar-hover: #1e293b;
   --bg-input: #334155;
   --bg-input-focus: #475569;
   --border-light: #475569;
   --border-card: #334155;
-  --text-primary: #f8fafc; /* Texte blanc cassé */
+  --text-primary: #f8fafc; 
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   --text-sidebar: #e2e8f0;
 
-  /* CHANGEMENT ICI: Le bleu devient rouge lumineux pour le dark mode */
-  --accent-primary: #ef4444;       /* Rouge lumineux (Red-500) */
-  --accent-primary-hover: #f87171; /* Rouge plus clair (Red-400) */
-  --accent-light: rgba(239, 68, 68, 0.2);
+  /* --- THÈME PRINCIPAL DARK (ROUGE LUMINEUX) --- */
+  /* Un rouge un peu plus clair pour bien ressortir sur le noir */
+  --accent-primary: #ef4444;       
+  --accent-primary-hover: #f87171; 
+  /* Transparence rouge pour les effets de lueur */
+  --accent-light: rgba(239, 68, 68, 0.15); 
 
   --accent-success: #34d399;
   --accent-success-light: rgba(5, 150, 105, 0.2);
@@ -76,18 +82,17 @@
 }
 
 @layer components {
-  /* Boutons */
+  /* Boutons Principaux (Rouges) */
   .btn-primary {
     @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150;
     background: var(--accent-primary);
-    color: white;
-    /* Mise à jour de l'ombre en rouge (RGB: 220, 38, 38) */
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1), 0 1px 3px rgba(220, 38, 38, 0.2);
+    color: white; /* Blanc sur rouge est toujours très lisible */
+    /* Ombre rouge subtile */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1), 0 1px 3px rgba(220, 38, 38, 0.3);
   }
   .btn-primary:hover {
     background: var(--accent-primary-hover);
-    /* Mise à jour de l'ombre en rouge */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15), 0 2px 6px rgba(220, 38, 38, 0.3);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15), 0 2px 6px rgba(220, 38, 38, 0.4);
     transform: translateY(-1px);
   }
   .btn-primary:active {
@@ -99,6 +104,7 @@
     transform: none;
   }
 
+  /* Boutons Secondaires (Restent neutres) */
   .btn-secondary {
     @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150;
     background: var(--bg-card);
@@ -112,6 +118,7 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
 
+  /* Autres boutons d'action */
   .btn-danger {
     @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-md transition-all duration-150;
     background: var(--accent-danger-light);
@@ -132,7 +139,7 @@
     opacity: 0.8;
   }
 
-  /* Cards avec ombre plus marquée */
+  /* Cards */
   .card {
     background: var(--bg-card);
     border: 1px solid var(--border-card);
@@ -141,7 +148,7 @@
     transition: background-color 0.3s ease, border-color 0.3s ease;
   }
 
-  /* Inputs améliorés */
+  /* Inputs avec Focus Rouge */
   .input-field {
     @apply w-full px-3 py-2.5 text-sm rounded-md transition-all duration-150 outline-none;
     background: var(--bg-input);
@@ -153,8 +160,8 @@
   }
   .input-field:focus {
     background: var(--bg-input-focus);
-    border-color: var(--accent-primary);
-    /* Mise à jour de l'ombre de focus en rouge */
+    border-color: var(--accent-primary); /* Bordure rouge au focus */
+    /* Ring rouge léger au focus */
     box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15), 0 1px 2px rgba(0,0,0,0.05);
   }
 
@@ -169,10 +176,21 @@
   .badge {
     @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold;
   }
-  .badge-blue {
+  /* Le badge "Primary" utilise maintenant les couleurs principales (rouge) */
+  .badge-primary {
     background: var(--accent-light);
     color: var(--accent-primary);
   }
+  /* On garde badge-blue si tu as besoin d'un bleu spécifique ailleurs, sinon il peut être supprimé */
+  .badge-blue {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+  .dark .badge-blue {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+  }
+  
   .badge-green {
     background: var(--accent-success-light);
     color: var(--accent-success);
@@ -192,12 +210,15 @@
     color: var(--text-sidebar);
   }
   .sidebar-item:hover {
+    /* Le hover reste sombre/neutre pour ne pas être agressif */
     background: var(--bg-sidebar-hover);
+    color: white; 
   }
   .sidebar-item-active {
+    /* L'élément actif prend le ROUGE principal */
     background: var(--accent-primary);
     color: white;
-    /* Mise à jour de l'ombre en rouge */
+    /* Ombre rouge sous l'item actif */
     box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
   }
 
@@ -225,6 +246,8 @@
   .stat-value {
     @apply text-3xl font-bold;
     font-variant-numeric: tabular-nums;
+    /* Optionnel : Si tu veux que les gros chiffres soient rouges, décommente la ligne dessous */
+    /* color: var(--accent-primary); */ 
   }
 
   /* Mono */
@@ -250,7 +273,6 @@
     pointer-events: none;
     z-index: 0;
   }
-  /* En dark mode, on diminue un peu l'opacité du watermark pour qu'il soit subtil */
   .dark .watermark {
     opacity: 0.03;
     filter: invert(1);
@@ -283,7 +305,6 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 select {
-  /* On utilise une icône inline SVG standard */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
