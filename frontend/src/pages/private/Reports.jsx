@@ -1,13 +1,16 @@
-/**
+{
+  type: "file_content_modification",
+  fileName: "zertye/pannel-ems/Pannel-EMS-f5c6cecf58fae9d9541a80e93d8e84223e7befc0/frontend/src/pages/private/Reports.jsx",
+  content: `/**
  * Reports - Gestion des rapports médicaux
  */
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { FilePlus, Trash2, X } from "lucide-react";
+import { FilePlus, Trash2, X, Minus, Plus } from "lucide-react"; // Ajout de Minus et Plus
 import { useAuth } from "../../contexts/AuthContext";
 import { apiFetch } from "../../utils/api";
 import { PERMISSIONS } from "../../utils/permissions";
-import { Layout, PageHeader, SelectField, TextArea } from "../../components";
+import { Layout, PageHeader, SelectField, TextArea, InputField } from "../../components"; // Ajout de InputField
 
 // Liste des services disponibles
 const SERVICES_LIST = [
@@ -60,6 +63,9 @@ export function Reports() {
   const [filterPatientId, setFilterPatientId] = useState(initialPatientId || "");
   const [loading, setLoading] = useState(true);
 
+  // État pour le diagnostic personnalisé
+  const [customDiagnosis, setCustomDiagnosis] = useState("");
+
   const [form, setForm] = useState({
     patient_id: "",
     disease: "",
@@ -74,7 +80,7 @@ export function Reports() {
     try {
       // Charger les rapports
       let url = "/api/reports";
-      if (filterPatientId) url += `?patient_id=${filterPatientId}`;
+      if (filterPatientId) url += \`?patient_id=\${filterPatientId}\`;
       
       const reportsRes = await apiFetch(url);
       if (reportsRes.ok) {
@@ -104,32 +110,62 @@ export function Reports() {
     loadData();
   }, [filterPatientId]);
 
-  // Toggle service
-  const toggleService = (item) => {
-    const exists = form.medications.includes(item.n);
-    const newMeds = exists
-      ? form.medications.filter((m) => m !== item.n)
-      : [...form.medications, item.n];
-
-    // Calculer le coût
+  // --- NOUVELLE LOGIQUE DE CALCUL DU COÛT ---
+  const updateMedsAndCost = (newMeds) => {
     let cost = 0;
-    SERVICES_LIST.forEach((c) =>
-      c.items.forEach((i) => {
-        if (newMeds.includes(i.n)) cost += i.p;
-      })
-    );
-
+    // On parcourt chaque médicament ajouté pour additionner son prix
+    newMeds.forEach(medName => {
+      // On cherche le prix dans la liste globale
+      for (const cat of SERVICES_LIST) {
+        const found = cat.items.find(i => i.n === medName);
+        if (found) {
+          cost += found.p;
+          break; 
+        }
+      }
+    });
     setForm({ ...form, medications: newMeds, total_cost: cost });
+  };
+
+  // Ajouter un service (peut être ajouté plusieurs fois)
+  const addService = (item) => {
+    const newMeds = [...form.medications, item.n];
+    updateMedsAndCost(newMeds);
+  };
+
+  // Retirer une instance d'un service
+  const removeService = (e, item) => {
+    e.stopPropagation(); // Empêche le clic parent (qui ajoute)
+    const index = form.medications.indexOf(item.n);
+    if (index > -1) {
+      const newMeds = [...form.medications];
+      newMeds.splice(index, 1); // Retire un seul élément à l'index trouvé
+      updateMedsAndCost(newMeds);
+    }
+  };
+
+  // Compter combien de fois un item est sélectionné
+  const getCount = (itemName) => {
+    return form.medications.filter(m => m === itemName).length;
   };
 
   // Soumettre le rapport
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Si "Autre" est sélectionné, on utilise la valeur personnalisée
+    const finalDisease = form.disease === "Autre" ? customDiagnosis : form.disease;
+
+    // Création de l'objet à envoyer
+    const payload = {
+      ...form,
+      disease: finalDisease
+    };
+
     try {
       const response = await apiFetch("/api/reports", {
         method: "POST",
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -141,6 +177,7 @@ export function Reports() {
           medications: [],
           total_cost: 0,
         });
+        setCustomDiagnosis(""); // Reset du champ custom
         loadData();
       }
     } catch (error) {
@@ -153,7 +190,7 @@ export function Reports() {
     if (!window.confirm("Supprimer ce rapport ?")) return;
 
     try {
-      const response = await apiFetch(`/api/reports/${id}`, { method: "DELETE" });
+      const response = await apiFetch(\`/api/reports/\${id}\`, { method: "DELETE" });
       if (response.ok) {
         loadData();
       }
@@ -285,7 +322,22 @@ export function Reports() {
                         {d}
                       </option>
                     ))}
+                    {/* AJOUT DE L'OPTION AUTRE */}
+                    <option value="Autre">Autre (Préciser)</option>
                   </SelectField>
+
+                  {/* AJOUT DU CHAMP TEXTE CONDITIONNEL */}
+                  {form.disease === "Autre" && (
+                    <div className="animate-in">
+                      <InputField
+                        label="Précisez le diagnostic"
+                        placeholder="Ex: Trauma crânien..."
+                        value={customDiagnosis}
+                        onChange={(e) => setCustomDiagnosis(e.target.value)}
+                        required
+                      />
+                    </div>
+                  )}
 
                   <TextArea
                     label="Contexte / Notes"
@@ -309,20 +361,42 @@ export function Reports() {
                       <div key={cat.cat}>
                         <h4 className="text-slate-500 text-xs font-bold uppercase mb-2">{cat.cat}</h4>
                         <div className="grid grid-cols-2 gap-2">
-                          {cat.items.map((item) => (
-                            <div
-                              key={item.n}
-                              onClick={() => toggleService(item)}
-                              className={`p-3 rounded-lg cursor-pointer border-2 text-sm flex justify-between items-center transition-all ${
-                                form.medications.includes(item.n)
-                                  ? "bg-red-50 dark:bg-red-900/20 border-red-400 text-red-700 dark:text-red-300 font-medium"
-                                  : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500"
-                              }`}
-                            >
-                              <span className="truncate">{item.n}</span>
-                              <span className="font-mono text-xs font-bold">{item.p}€</span>
-                            </div>
-                          ))}
+                          {cat.items.map((item) => {
+                            const count = getCount(item.n);
+                            return (
+                              <div
+                                key={item.n}
+                                onClick={() => addService(item)}
+                                className={\`p-3 rounded-lg cursor-pointer border-2 text-sm flex justify-between items-center transition-all select-none \${
+                                  count > 0
+                                    ? "bg-red-50 dark:bg-red-900/20 border-red-400 text-red-700 dark:text-red-300 font-medium"
+                                    : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500"
+                                }\`}
+                              >
+                                <div className="flex flex-col overflow-hidden">
+                                  <span className="truncate">{item.n}</span>
+                                  <span className="font-mono text-xs opacity-70">{item.p}€</span>
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                  {count > 0 && (
+                                    <>
+                                      <button 
+                                        onClick={(e) => removeService(e, item)}
+                                        className="p-1 hover:bg-red-200 dark:hover:bg-red-800/50 rounded text-red-700 dark:text-red-300 transition-colors"
+                                      >
+                                        <Minus size={12} strokeWidth={3} />
+                                      </button>
+                                      <span className="bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                                        {count}
+                                      </span>
+                                    </>
+                                  )}
+                                  {count === 0 && <span className="text-slate-300"><Plus size={14} /></span>}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     ))}
@@ -351,3 +425,5 @@ export function Reports() {
 }
 
 export default Reports;
+`
+}
