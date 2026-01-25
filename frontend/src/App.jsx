@@ -24,6 +24,7 @@ import { Diagnosis } from "./pages/private/Diagnosis";
 import { Reports } from "./pages/private/Reports";
 import { Roster } from "./pages/private/Roster";
 import { Admin } from "./pages/private/Admin";
+import { MedicalVisits } from "./pages/private/MedicalVisits"; // Import de la nouvelle page
 
 /**
  * Composant App principal
@@ -90,6 +91,16 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <Reports />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Nouvelle Route : Visite Médicale LSPD */}
+            <Route
+              path="/medical-visits"
+              element={
+                <ProtectedRoute>
+                  <MedicalVisits />
                 </ProtectedRoute>
               }
             />
