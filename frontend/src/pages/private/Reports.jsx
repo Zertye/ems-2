@@ -1,16 +1,13 @@
-{
-  type: "file_content_modification",
-  fileName: "zertye/pannel-ems/Pannel-EMS-f5c6cecf58fae9d9541a80e93d8e84223e7befc0/frontend/src/pages/private/Reports.jsx",
-  content: `/**
+/**
  * Reports - Gestion des rapports médicaux
  */
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { FilePlus, Trash2, X, Minus, Plus } from "lucide-react"; // Ajout de Minus et Plus
+import { FilePlus, Trash2, X, Minus, Plus } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { apiFetch } from "../../utils/api";
 import { PERMISSIONS } from "../../utils/permissions";
-import { Layout, PageHeader, SelectField, TextArea, InputField } from "../../components"; // Ajout de InputField
+import { Layout, PageHeader, SelectField, TextArea, InputField } from "../../components";
 
 // Liste des services disponibles
 const SERVICES_LIST = [
@@ -80,7 +77,7 @@ export function Reports() {
     try {
       // Charger les rapports
       let url = "/api/reports";
-      if (filterPatientId) url += \`?patient_id=\${filterPatientId}\`;
+      if (filterPatientId) url += `?patient_id=${filterPatientId}`;
       
       const reportsRes = await apiFetch(url);
       if (reportsRes.ok) {
@@ -110,7 +107,7 @@ export function Reports() {
     loadData();
   }, [filterPatientId]);
 
-  // --- NOUVELLE LOGIQUE DE CALCUL DU COÛT ---
+  // --- LOGIQUE DE CALCUL DU COÛT ---
   const updateMedsAndCost = (newMeds) => {
     let cost = 0;
     // On parcourt chaque médicament ajouté pour additionner son prix
@@ -190,7 +187,7 @@ export function Reports() {
     if (!window.confirm("Supprimer ce rapport ?")) return;
 
     try {
-      const response = await apiFetch(\`/api/reports/\${id}\`, { method: "DELETE" });
+      const response = await apiFetch(`/api/reports/${id}`, { method: "DELETE" });
       if (response.ok) {
         loadData();
       }
@@ -322,11 +319,11 @@ export function Reports() {
                         {d}
                       </option>
                     ))}
-                    {/* AJOUT DE L'OPTION AUTRE */}
+                    {/* OPTION AUTRE */}
                     <option value="Autre">Autre (Préciser)</option>
                   </SelectField>
 
-                  {/* AJOUT DU CHAMP TEXTE CONDITIONNEL */}
+                  {/* CHAMP TEXTE CONDITIONNEL */}
                   {form.disease === "Autre" && (
                     <div className="animate-in">
                       <InputField
@@ -367,11 +364,11 @@ export function Reports() {
                               <div
                                 key={item.n}
                                 onClick={() => addService(item)}
-                                className={\`p-3 rounded-lg cursor-pointer border-2 text-sm flex justify-between items-center transition-all select-none \${
+                                className={`p-3 rounded-lg cursor-pointer border-2 text-sm flex justify-between items-center transition-all select-none ${
                                   count > 0
                                     ? "bg-red-50 dark:bg-red-900/20 border-red-400 text-red-700 dark:text-red-300 font-medium"
                                     : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500"
-                                }\`}
+                                }`}
                               >
                                 <div className="flex flex-col overflow-hidden">
                                   <span className="truncate">{item.n}</span>
@@ -425,5 +422,3 @@ export function Reports() {
 }
 
 export default Reports;
-`
-}
