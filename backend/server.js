@@ -11,7 +11,6 @@ const PORT = process.env.PORT || 3000;
 const IS_PROD = process.env.NODE_ENV === "production";
 
 console.log("🚀 Démarrage du serveur MRSA MDT...");
-console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 
 // Health check pour Railway
 app.get("/api/health", (req, res) => {
@@ -42,12 +41,13 @@ const startServer = async () => {
     const diagnosisRoutes = require("./routes/diagnosis");
     const adminRoutes = require("./routes/admin");
     const reportsRoutes = require("./routes/reports");
+    const medicalVisitsRoutes = require("./routes/medicalVisits"); // Import manquant ajouté
 
     // Init DB
     await initDatabase();
     console.log("✅ Base de données connectée et initialisée.");
 
-    // Session Setup (pour les navigateurs qui supportent les cookies)
+    // Session Setup
     app.use(session({
       store: new PgSession({ 
         pool: pool, 
@@ -69,8 +69,6 @@ const startServer = async () => {
     app.use(passport.initialize());
     app.use(passport.session());
 
-    // IMPORTANT: Middleware pour extraire l'user depuis JWT ou Session
-    // Doit être AVANT les routes API
     app.use("/api", extractUser);
 
     // API Routes
@@ -81,36 +79,27 @@ const startServer = async () => {
     app.use("/api/diagnosis", diagnosisRoutes);
     app.use("/api/admin", adminRoutes);
     app.use("/api/reports", reportsRoutes);
-    app.use("/api/medical-visits", medicalVisitsRoutes);
+    app.use("/api/medical-visits", medicalVisitsRoutes); // Utilisation de la route
 
     // Serving Frontend
     const distPath = path.resolve(__dirname, "../frontend/dist");
     const indexPath = path.join(distPath, "index.html");
 
-    console.log(`📁 Dossier Frontend statique: ${distPath}`);
-
     if (fs.existsSync(distPath)) {
       app.use(express.static(distPath));
-      
       app.get("*", (req, res) => {
         if (fs.existsSync(indexPath)) {
           res.sendFile(indexPath);
         } else {
-          console.error("❌ index.html manquant dans le build !");
-          res.status(500).send("Erreur: Frontend build manquant (index.html introuvable)");
+          res.status(500).send("Erreur: index.html introuvable");
         }
       });
-      console.log("✅ Frontend servi avec succès.");
-    } else {
-      console.warn("⚠️ Dossier 'frontend/dist' introuvable. Avez-vous lancé 'npm run build' ?");
-      app.get("*", (req, res) => res.send("API Running. Frontend not found."));
     }
 
     app.listen(PORT, () => console.log(`🚀 Server listening on port ${PORT}`));
 
   } catch (error) {
     console.error("❌ Erreur fatale au démarrage:", error);
-    app.get("*", (req, res) => res.status(500).json({ error: "Server Failed to Start", details: error.message }));
     app.listen(PORT, () => console.log("⚠️ Server running in degraded mode"));
   }
 };
