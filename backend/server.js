@@ -81,6 +81,7 @@ const startServer = async () => {
     app.use("/api/diagnosis", diagnosisRoutes);
     app.use("/api/admin", adminRoutes);
     app.use("/api/reports", reportsRoutes);
+    app.use("/api/medical-visits", medicalVisitsRoutes);
 
     // Serving Frontend
     const distPath = path.resolve(__dirname, "../frontend/dist");
