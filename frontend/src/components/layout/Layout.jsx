@@ -16,6 +16,7 @@ import {
   X,
   User,
   Camera,
+  ShieldCheck, // Import de l'icône pour la visite médicale
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { apiFetch } from "../../utils/api";
@@ -175,6 +176,7 @@ export function Layout({ children }) {
     { icon: Users, label: "Patients", to: "/patients" },
     { icon: Stethoscope, label: "Diagnostic", to: "/diagnosis" },
     { icon: FileText, label: "Rapports", to: "/reports" },
+    { icon: ShieldCheck, label: "Visite Médicale", to: "/medical-visits" }, // Ajout de l'onglet Visite Médicale
     { icon: Activity, label: "Effectifs", to: "/roster" },
   ];
 
