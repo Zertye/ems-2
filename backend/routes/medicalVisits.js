@@ -10,11 +10,11 @@ router.post("/send-visit", isAuthenticated, async (req, res) => {
     const emsWebhook = process.env.WEBHOOK_EMS;
 
     if (!lspdWebhook || !emsWebhook) {
-      return res.status(500).json({ error: "Configuration Webhook manquante" });
+      return res.status(500).json({ error: "Configuration Webhook manquante (WEBHOOK_LSPD ou WEBHOOK_EMS)" });
     }
 
     const isApte = status === "APTE";
-    const embedColor = isApte ? 3066993 : 15158332; // Vert si Apte, Rouge si Inapte
+    const embedColor = isApte ? 3066993 : 15158332; // Vert pour APTE, Rouge pour INAPTE
 
     const embedData = {
       embeds: [{
@@ -30,7 +30,7 @@ router.post("/send-visit", isAuthenticated, async (req, res) => {
       }]
     };
 
-    // Envoi simultané aux deux services
+    // Envoi simultané aux webhooks LSPD et EMS
     await Promise.all([
       fetch(lspdWebhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(embedData) }),
       fetch(emsWebhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(embedData) })
@@ -38,7 +38,8 @@ router.post("/send-visit", isAuthenticated, async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: "Erreur d'envoi" });
+    console.error("Erreur Webhook Visite:", err);
+    res.status(500).json({ error: "Erreur lors de l'envoi de la visite médicale" });
   }
 });
 
